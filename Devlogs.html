@@ -629,7 +629,10 @@
           if (hasMedia) {
             const carousel = card.querySelector(".card-carousel");
             const items = carousel.querySelectorAll("img, video");
-            syncCardVideos(items);
+            syncCardVideos(card, items);
+
+            card.addEventListener("mouseenter", () => syncCardVideos(card, items));
+            card.addEventListener("mouseleave", () => syncCardVideos(card, items));
 
             if (items.length > 1) {
               setInterval(() => {
@@ -638,7 +641,7 @@
                 const next = (current + 1) % items.length;
                 items[next].classList.add("active");
                 carousel.dataset.index = next;
-                syncCardVideos(items);
+                syncCardVideos(card, items);
               }, 2800);
             }
           }
@@ -777,13 +780,14 @@
       if (Number.isNaN(parsed.getTime())) return "LOG --/--";
       const day = String(parsed.getUTCDate()).padStart(2, "0");
       const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
-      return `LOG ${day}/${month}`;
+      return `LOG ${day}.${month}`;
     }
 
-    function syncCardVideos(items) {
+    function syncCardVideos(card, items) {
+      const canPlay = card.matches(":hover");
       items.forEach(item => {
         if (item.tagName !== "VIDEO") return;
-        if (item.classList.contains("active")) {
+        if (canPlay && item.classList.contains("active")) {
           item.play().catch(() => {});
         } else {
           item.pause();
