@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Devlogs</title>
+  <title>Devlogs Debug</title>
 
   <style>
     body {
@@ -14,9 +14,9 @@
     }
 
     header {
-      padding: 40px;
+      padding: 30px;
       text-align: center;
-      font-size: 32px;
+      font-size: 28px;
       font-weight: bold;
       background: #151922;
       border-bottom: 1px solid #2a2f3a;
@@ -36,58 +36,30 @@
       margin-bottom: 20px;
     }
 
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-    }
-
-    .title {
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .meta {
-      font-size: 12px;
-      opacity: 0.7;
-    }
-
-    .content {
-      white-space: pre-wrap;
-      margin-top: 10px;
-      line-height: 1.4;
-    }
-
-    .images {
-      margin-top: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .images img {
-      max-width: 100%;
+    .error {
+      background: #2a1111;
+      border: 1px solid #ff4d4d;
+      padding: 15px;
       border-radius: 8px;
-      border: 1px solid #2a2f3a;
+      color: #ffb3b3;
+      white-space: pre-wrap;
     }
 
     .loading {
       text-align: center;
-      padding: 50px;
+      opacity: 0.7;
+      padding: 40px;
+    }
+
+    .small {
+      font-size: 12px;
       opacity: 0.7;
     }
   </style>
 </head>
 
 <body>
-  <header>Devlogs</header>
+  <header>Devlogs Debug Mode</header>
 
   <div id="container">
     <div class="loading" id="loading">Loading devlogs...</div>
@@ -99,48 +71,89 @@
       const loading = document.getElementById("loading");
 
       try {
+        console.log("Fetching /api/devlogs...");
+
         const res = await fetch("/api/devlogs");
-        
+
+        console.log("Response status:", res.status);
+        console.log("Response ok:", res.ok);
+
+        const text = await res.text();
+
+        console.log("Raw response:", text);
+
+        // If not OK, show real server error
         if (!res.ok) {
-          throw new Error("Failed to fetch devlogs");
+          loading.remove();
+          container.innerHTML = `
+            <div class="error">
+              <b>HTTP Error:</b> ${res.status}<br><br>
+              <b>Server response:</b><br>
+              ${text}
+            </div>
+          `;
+          return;
         }
 
-        const data = await res.json();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          loading.remove();
+          container.innerHTML = `
+            <div class="error">
+              <b>JSON Parse Error</b><br><br>
+              The API did not return valid JSON.<br><br>
+              <b>Raw output:</b><br>
+              ${text}
+            </div>
+          `;
+          return;
+        }
 
         loading.remove();
+
+        if (!Array.isArray(data)) {
+          container.innerHTML = `
+            <div class="error">
+              API returned invalid structure (not an array).<br><br>
+              <pre>${JSON.stringify(data, null, 2)}</pre>
+            </div>
+          `;
+          return;
+        }
+
+        if (data.length === 0) {
+          container.innerHTML = `<div class="small">No devlogs found.</div>`;
+          return;
+        }
 
         data.forEach(post => {
           const card = document.createElement("div");
           card.className = "card";
 
-          const imagesHTML = (post.images && post.images.length)
-            ? `<div class="images">
-                ${post.images.map(img => `<img src="${img}" />`).join("")}
-              </div>`
-            : "";
-
           card.innerHTML = `
-            <div class="card-header">
-              <img class="avatar" src="${post.avatar}" />
-              <div>
-                <div class="title">${post.title || "Untitled"}</div>
-                <div class="meta">
-                  ${post.author} • ${new Date(post.date).toLocaleString()}
-                </div>
-              </div>
+            <b>${post.title || "Untitled"}</b><br>
+            <div class="small">
+              ${post.author || "unknown"} • ${post.date || "no date"}
             </div>
-
-            <div class="content">${post.content}</div>
-
-            ${imagesHTML}
+            <br>
+            <div>${post.content || ""}</div>
           `;
 
           container.appendChild(card);
         });
 
       } catch (err) {
-        loading.textContent = "Failed to load devlogs.";
-        console.error(err);
+        console.error("Fetch failed:", err);
+
+        loading.remove();
+        container.innerHTML = `
+          <div class="error">
+            <b>Fetch Failed (Network / Function not running)</b><br><br>
+            ${err.stack || err}
+          </div>
+        `;
       }
     }
 
