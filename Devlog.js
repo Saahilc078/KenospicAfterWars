@@ -2,17 +2,22 @@ async function loadDevlogs() {
   const container = document.getElementById("container");
   const loading = document.getElementById("loading");
 
-  try {
-    console.log("Fetching devlogs...");
+  const API_URL = window.location.origin + "/api/devlogs";
 
-    const res = await fetch("/api/devlogs");
+  try {
+    console.log("Fetching:", API_URL);
+
+    const res = await fetch(API_URL, {
+      method: "GET",
+      cache: "no-store"
+    });
 
     const text = await res.text();
-    console.log("RAW API RESPONSE:", text);
+    console.log("RAW RESPONSE:", text);
 
     loading?.remove();
 
-    // ❌ Handle non-OK responses
+    // ❌ Hard fail if not OK
     if (!res.ok) {
       container.innerHTML = `
         <div class="error">
@@ -23,9 +28,8 @@ async function loadDevlogs() {
       return;
     }
 
+    // ❌ Validate JSON before parsing
     let data;
-
-    // ❌ Safe JSON parsing
     try {
       data = JSON.parse(text);
     } catch (err) {
@@ -55,18 +59,18 @@ async function loadDevlogs() {
 
       card.innerHTML = `
         <div class="card-header">
-          <img class="avatar" src="${post.avatar}" />
+          <img class="avatar" src="${post.avatar || ""}" />
           <div>
-            <div class="title">${escapeHtml(post.title)}</div>
+            <div class="title">${escapeHtml(post.title || "Devlog")}</div>
             <div class="meta">
-              ${escapeHtml(post.author)} • 
+              ${escapeHtml(post.author || "unknown")} • 
               ${post.date ? new Date(post.date).toLocaleString() : "unknown"}
             </div>
           </div>
         </div>
 
         <div class="content">
-          ${formatContent(post.content)}
+          ${formatContent(post.content || "")}
         </div>
       `;
 
@@ -87,28 +91,47 @@ async function loadDevlogs() {
 }
 
 /**
- * Simple devlog formatter
+ * Converts Discord-style devlogs into readable sections
  */
 function formatContent(text) {
   if (!text) return "<i>No content</i>";
 
-  return text
-    .split("\n")
-    .map(line => {
-      line = line.trim();
-      if (!line) return "";
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
-      if (line.match(/^[A-Z][A-Za-z0-9 ]+$/) && line.length < 40) {
-        return `<h4>${escapeHtml(line)}</h4>`;
+  let html = "";
+  let inList = false;
+
+  for (const line of lines) {
+    const isHeader = /^[A-Z][A-Za-z0-9 ]+$/.test(line) && line.length < 40;
+
+    if (isHeader) {
+      if (inList) {
+        html += "</ul>";
+        inList = false;
       }
 
-      if (line.startsWith("-")) {
-        return `<li>${escapeHtml(line.slice(1).trim())}</li>`;
-      }
+      html += `<h3>${escapeHtml(line)}</h3>`;
+      continue;
+    }
 
-      return `<p>${escapeHtml(line)}</p>`;
-    })
-    .join("");
+    if (line.startsWith("-")) {
+      if (!inList) {
+        html += "<ul>";
+        inList = true;
+      }
+      html += `<li>${escapeHtml(line.slice(1).trim())}</li>`;
+    } else {
+      if (inList) {
+        html += "</ul>";
+        inList = false;
+      }
+      html += `<p>${escapeHtml(line)}</p>`;
+    }
+  }
+
+  if (inList) html += "</ul>";
+
+  return html;
 }
 
 /**
