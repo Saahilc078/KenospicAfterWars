@@ -3,39 +3,67 @@ async function loadDevlogs() {
   const loading = document.getElementById("loading");
 
   try {
+    console.log("Fetching devlogs...");
+
     const res = await fetch("/api/devlogs");
+
     const text = await res.text();
+    console.log("API RAW RESPONSE:", text);
 
-    console.log("API RESPONSE:", text);
+    // ❗ ALWAYS remove loading (no matter what)
+    loading?.remove();
 
+    // ❌ Handle HTTP errors safely
     if (!res.ok) {
-      loading.remove();
-      container.innerHTML = `<div class="error">${text}</div>`;
+      container.innerHTML = `
+        <div class="error">
+          <b>API Error (${res.status})</b><br><br>
+          <pre>${escapeHtml(text)}</pre>
+        </div>
+      `;
       return;
     }
 
-    const data = JSON.parse(text);
+    let data;
 
-    loading.remove();
+    // ❌ Safe JSON parse (prevents silent crash)
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      container.innerHTML = `
+        <div class="error">
+          <b>Invalid JSON from API</b><br><br>
+          <pre>${escapeHtml(text)}</pre>
+        </div>
+      `;
+      return;
+    }
 
     if (!Array.isArray(data)) {
-      container.innerHTML = `<div class="error">Invalid API format</div>`;
+      container.innerHTML = `
+        <div class="error">API did not return an array</div>
+      `;
       return;
     }
+
+    console.log("Parsed devlogs:", data);
+
+    container.innerHTML = "";
 
     data.forEach(post => {
       const card = document.createElement("div");
       card.className = "card";
 
-      const sectionsHTML = formatSections(post.content);
+      const sectionsHTML = formatSections(post.content || "");
 
       card.innerHTML = `
         <div class="card-header">
-          <img class="avatar" src="${post.avatar}" />
+          <img class="avatar" src="${post.avatar || ''}" />
           <div>
-            <div class="title">${post.title}</div>
+            <div class="title">${post.title || "Devlog"}</div>
             <div class="meta">
-              ${post.author} • ${new Date(post.date).toLocaleString()}
+              ${post.author || "unknown"} • 
+              ${post.date ? new Date(post.date).toLocaleString() : "no date"}
             </div>
           </div>
         </div>
@@ -49,19 +77,20 @@ async function loadDevlogs() {
     });
 
   } catch (err) {
-    console.error(err);
-    loading.innerText = "Failed to load devlogs (check console)";
+    console.error("FATAL ERROR:", err);
+
+    loading?.remove();
+    container.innerHTML = `
+      <div class="error">
+        <b>Fetch Failed</b><br><br>
+        <pre>${err.stack || err}</pre>
+      </div>
+    `;
   }
 }
 
 /**
- * Converts your style:
- * Additions
- * - Added X
- * - Added Y
- *
- * Enhancements
- * - Fixed Z
+ * Your patch note parser
  */
 function formatSections(text) {
   if (!text) return "<i>No content</i>";
@@ -84,23 +113,35 @@ function formatSections(text) {
 
       html += `
         <div class="section">
-          <h3>${currentSection}</h3>
+          <h3>${escapeHtml(currentSection)}</h3>
           <ul>
       `;
       continue;
     }
 
     if (!currentSection) {
-      html += `<p>${line}</p>`;
+      html += `<p>${escapeHtml(line)}</p>`;
       continue;
     }
 
-    html += `<li>${line}</li>`;
+    html += `<li>${escapeHtml(line)}</li>`;
   }
 
   if (currentSection) html += "</ul></div>";
 
   return html;
+}
+
+/**
+ * Prevents broken HTML / injection issues
+ */
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 loadDevlogs();
