@@ -4,8 +4,9 @@ async function loadDevlogs() {
 
   try {
     const res = await fetch("/api/devlogs");
-
     const text = await res.text();
+
+    console.log("API RESPONSE:", text);
 
     if (!res.ok) {
       loading.remove();
@@ -13,19 +14,12 @@ async function loadDevlogs() {
       return;
     }
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      loading.remove();
-      container.innerHTML = `<div class="error">Invalid JSON returned:\n\n${text}</div>`;
-      return;
-    }
+    const data = JSON.parse(text);
 
     loading.remove();
 
     if (!Array.isArray(data)) {
-      container.innerHTML = `<div class="error">API did not return array</div>`;
+      container.innerHTML = `<div class="error">Invalid API format</div>`;
       return;
     }
 
@@ -33,53 +27,60 @@ async function loadDevlogs() {
       const card = document.createElement("div");
       card.className = "card";
 
-      const sectionsHTML = buildSections(post.content || "");
+      const sectionsHTML = formatSections(post.content);
 
       card.innerHTML = `
         <div class="card-header">
           <img class="avatar" src="${post.avatar}" />
           <div>
-            <div class="title">${post.title || "Devlog"}</div>
+            <div class="title">${post.title}</div>
             <div class="meta">
-              ${post.author || "unknown"} • ${new Date(post.date).toLocaleString()}
+              ${post.author} • ${new Date(post.date).toLocaleString()}
             </div>
           </div>
         </div>
 
-        ${sectionsHTML}
+        <div class="content">
+          ${sectionsHTML}
+        </div>
       `;
 
       container.appendChild(card);
     });
 
   } catch (err) {
-    loading.remove();
-    container.innerHTML = `<div class="error">${err.stack || err}</div>`;
+    console.error(err);
+    loading.innerText = "Failed to load devlogs (check console)";
   }
 }
 
-/*
-  Turns your Discord-style logs into sections:
-  "Additions"
-  - item
-  - item
-*/
-function buildSections(text) {
+/**
+ * Converts your style:
+ * Additions
+ * - Added X
+ * - Added Y
+ *
+ * Enhancements
+ * - Fixed Z
+ */
+function formatSections(text) {
+  if (!text) return "<i>No content</i>";
+
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
   let html = "";
   let currentSection = null;
 
-  for (let line of lines) {
+  for (const line of lines) {
 
-    // Detect section headers (Additions, Enhancements, etc.)
-    if (
+    const isHeader =
       line.length < 40 &&
-      (line.endsWith(":") || line.toUpperCase() === line || /^[A-Z][a-zA-Z ]+$/.test(line))
-    ) {
-      if (currentSection) html += `</ul></div>`;
+      /^[A-Z][A-Za-z0-9 ]+$/.test(line);
 
-      currentSection = line.replace(":", "");
+    if (isHeader) {
+      if (currentSection) html += "</ul></div>";
+
+      currentSection = line;
 
       html += `
         <div class="section">
@@ -89,16 +90,15 @@ function buildSections(text) {
       continue;
     }
 
-    // Normal bullet line
     if (!currentSection) {
-      html += `<div class="section"><p>${line}</p></div>`;
+      html += `<p>${line}</p>`;
       continue;
     }
 
     html += `<li>${line}</li>`;
   }
 
-  if (currentSection) html += `</ul></div>`;
+  if (currentSection) html += "</ul></div>";
 
   return html;
 }
