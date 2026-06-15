@@ -8,16 +8,15 @@ async function loadDevlogs() {
     const res = await fetch("/api/devlogs");
 
     const text = await res.text();
-    console.log("API RAW RESPONSE:", text);
+    console.log("RAW API RESPONSE:", text);
 
-    // ❗ ALWAYS remove loading (no matter what)
     loading?.remove();
 
-    // ❌ Handle HTTP errors safely
+    // ❌ Handle non-OK responses
     if (!res.ok) {
       container.innerHTML = `
         <div class="error">
-          <b>API Error (${res.status})</b><br><br>
+          <h3>API Error (${res.status})</h3>
           <pre>${escapeHtml(text)}</pre>
         </div>
       `;
@@ -26,13 +25,13 @@ async function loadDevlogs() {
 
     let data;
 
-    // ❌ Safe JSON parse (prevents silent crash)
+    // ❌ Safe JSON parsing
     try {
       data = JSON.parse(text);
-    } catch (e) {
+    } catch (err) {
       container.innerHTML = `
         <div class="error">
-          <b>Invalid JSON from API</b><br><br>
+          <h3>Invalid JSON from API</h3>
           <pre>${escapeHtml(text)}</pre>
         </div>
       `;
@@ -41,12 +40,12 @@ async function loadDevlogs() {
 
     if (!Array.isArray(data)) {
       container.innerHTML = `
-        <div class="error">API did not return an array</div>
+        <div class="error">
+          API did not return an array
+        </div>
       `;
       return;
     }
-
-    console.log("Parsed devlogs:", data);
 
     container.innerHTML = "";
 
@@ -54,22 +53,20 @@ async function loadDevlogs() {
       const card = document.createElement("div");
       card.className = "card";
 
-      const sectionsHTML = formatSections(post.content || "");
-
       card.innerHTML = `
         <div class="card-header">
-          <img class="avatar" src="${post.avatar || ''}" />
+          <img class="avatar" src="${post.avatar}" />
           <div>
-            <div class="title">${post.title || "Devlog"}</div>
+            <div class="title">${escapeHtml(post.title)}</div>
             <div class="meta">
-              ${post.author || "unknown"} • 
-              ${post.date ? new Date(post.date).toLocaleString() : "no date"}
+              ${escapeHtml(post.author)} • 
+              ${post.date ? new Date(post.date).toLocaleString() : "unknown"}
             </div>
           </div>
         </div>
 
         <div class="content">
-          ${sectionsHTML}
+          ${formatContent(post.content)}
         </div>
       `;
 
@@ -77,63 +74,45 @@ async function loadDevlogs() {
     });
 
   } catch (err) {
-    console.error("FATAL ERROR:", err);
+    console.error(err);
 
     loading?.remove();
     container.innerHTML = `
       <div class="error">
-        <b>Fetch Failed</b><br><br>
-        <pre>${err.stack || err}</pre>
+        <h3>Fetch Failed</h3>
+        <pre>${err.message}</pre>
       </div>
     `;
   }
 }
 
 /**
- * Your patch note parser
+ * Simple devlog formatter
  */
-function formatSections(text) {
+function formatContent(text) {
   if (!text) return "<i>No content</i>";
 
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  return text
+    .split("\n")
+    .map(line => {
+      line = line.trim();
+      if (!line) return "";
 
-  let html = "";
-  let currentSection = null;
+      if (line.match(/^[A-Z][A-Za-z0-9 ]+$/) && line.length < 40) {
+        return `<h4>${escapeHtml(line)}</h4>`;
+      }
 
-  for (const line of lines) {
+      if (line.startsWith("-")) {
+        return `<li>${escapeHtml(line.slice(1).trim())}</li>`;
+      }
 
-    const isHeader =
-      line.length < 40 &&
-      /^[A-Z][A-Za-z0-9 ]+$/.test(line);
-
-    if (isHeader) {
-      if (currentSection) html += "</ul></div>";
-
-      currentSection = line;
-
-      html += `
-        <div class="section">
-          <h3>${escapeHtml(currentSection)}</h3>
-          <ul>
-      `;
-      continue;
-    }
-
-    if (!currentSection) {
-      html += `<p>${escapeHtml(line)}</p>`;
-      continue;
-    }
-
-    html += `<li>${escapeHtml(line)}</li>`;
-  }
-
-  if (currentSection) html += "</ul></div>";
-
-  return html;
+      return `<p>${escapeHtml(line)}</p>`;
+    })
+    .join("");
 }
 
 /**
- * Prevents broken HTML / injection issues
+ * Prevent HTML breaking / injection
  */
 function escapeHtml(str) {
   return String(str)
