@@ -1,59 +1,106 @@
-export async function onRequest(context) {
-    try {
-        const token = context.env.DISCORD_TOKEN;
-        const channel = context.env.DISCORD_CHANNEL;
+async function loadDevlogs() {
+  const container = document.getElementById("container");
+  const loading = document.getElementById("loading");
 
-        const response = await fetch(
-            `https://discord.com/api/v10/channels/${channel}/messages?limit=20`,
-            {
-                headers: {
-                    Authorization: `Bot ${token}`
-                }
-            }
-        );
+  try {
+    const res = await fetch("/api/devlogs");
 
-        if (!response.ok) {
-            const errText = await response.text();
-            return new Response(JSON.stringify({
-                error: "Discord API Error",
-                details: errText,
-                status: response.status
-            }), {
-                status: 500,
-                headers: { "Content-Type": "application/json" }
-            });
-        }
+    const text = await res.text();
 
-        const messages = await response.json();
-
-        const posts = messages.reverse().map(msg => ({
-            id: msg.id,
-            title: msg.content?.split("\n")[0] || "Untitled",
-            content: msg.content || "",
-            author: msg.author?.username || "unknown",
-            avatar: msg.author?.avatar
-                ? `https://cdn.discordapp.com/avatars/${msg.author.id}/${msg.author.avatar}.png`
-                : `https://cdn.discordapp.com/embed/avatars/0.png`,
-            date: msg.timestamp,
-            images: (msg.attachments || []).map(a => a.url)
-        }));
-
-        return new Response(JSON.stringify(posts), {
-            status: 200,
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
-
-    } catch (err) {
-        return new Response(JSON.stringify({
-            error: "Function crashed",
-            details: err.message
-        }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" }
-        });
+    if (!res.ok) {
+      loading.remove();
+      container.innerHTML = `<div class="error">${text}</div>`;
+      return;
     }
-    console.log("TOKEN EXISTS:", !!context.env.DISCORD_TOKEN);
-console.log("CHANNEL:", context.env.DISCORD_CHANNEL);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      loading.remove();
+      container.innerHTML = `<div class="error">Invalid JSON returned:\n\n${text}</div>`;
+      return;
+    }
+
+    loading.remove();
+
+    if (!Array.isArray(data)) {
+      container.innerHTML = `<div class="error">API did not return array</div>`;
+      return;
+    }
+
+    data.forEach(post => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const sectionsHTML = buildSections(post.content || "");
+
+      card.innerHTML = `
+        <div class="card-header">
+          <img class="avatar" src="${post.avatar}" />
+          <div>
+            <div class="title">${post.title || "Devlog"}</div>
+            <div class="meta">
+              ${post.author || "unknown"} • ${new Date(post.date).toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        ${sectionsHTML}
+      `;
+
+      container.appendChild(card);
+    });
+
+  } catch (err) {
+    loading.remove();
+    container.innerHTML = `<div class="error">${err.stack || err}</div>`;
+  }
 }
+
+/*
+  Turns your Discord-style logs into sections:
+  "Additions"
+  - item
+  - item
+*/
+function buildSections(text) {
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+
+  let html = "";
+  let currentSection = null;
+
+  for (let line of lines) {
+
+    // Detect section headers (Additions, Enhancements, etc.)
+    if (
+      line.length < 40 &&
+      (line.endsWith(":") || line.toUpperCase() === line || /^[A-Z][a-zA-Z ]+$/.test(line))
+    ) {
+      if (currentSection) html += `</ul></div>`;
+
+      currentSection = line.replace(":", "");
+
+      html += `
+        <div class="section">
+          <h3>${currentSection}</h3>
+          <ul>
+      `;
+      continue;
+    }
+
+    // Normal bullet line
+    if (!currentSection) {
+      html += `<div class="section"><p>${line}</p></div>`;
+      continue;
+    }
+
+    html += `<li>${line}</li>`;
+  }
+
+  if (currentSection) html += `</ul></div>`;
+
+  return html;
+}
+
+loadDevlogs();

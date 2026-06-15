@@ -1,57 +1,110 @@
-export async function onRequest(context) {
-    try {
-        const token = context.env.DISCORD_TOKEN;
-        const channel = context.env.DISCORD_CHANNEL;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Devlogs</title>
 
-        const response = await fetch(
-            `https://discord.com/api/v10/channels/${channel}/messages?limit=20`,
-            {
-                headers: {
-                    Authorization: `Bot ${token}`
-                }
-            }
-        );
-
-        if (!response.ok) {
-            const errText = await response.text();
-            return new Response(JSON.stringify({
-                error: "Discord API Error",
-                details: errText,
-                status: response.status
-            }), {
-                status: 500,
-                headers: { "Content-Type": "application/json" }
-            });
-        }
-
-        const messages = await response.json();
-
-        const posts = messages.reverse().map(msg => ({
-            id: msg.id,
-            title: msg.content?.split("\n")[0] || "Untitled",
-            content: msg.content || "",
-            author: msg.author?.username || "unknown",
-            avatar: msg.author?.avatar
-                ? `https://cdn.discordapp.com/avatars/${msg.author.id}/${msg.author.avatar}.png`
-                : `https://cdn.discordapp.com/embed/avatars/0.png`,
-            date: msg.timestamp,
-            images: (msg.attachments || []).map(a => a.url)
-        }));
-
-        return new Response(JSON.stringify(posts), {
-            status: 200,
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
-
-    } catch (err) {
-        return new Response(JSON.stringify({
-            error: "Function crashed",
-            details: err.message
-        }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" }
-        });
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f1115;
+      color: #e6e6e6;
     }
-}
+
+    header {
+      padding: 40px;
+      text-align: center;
+      font-size: 32px;
+      font-weight: bold;
+      background: #151922;
+      border-bottom: 1px solid #2a2f3a;
+    }
+
+    #container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #2a2f3a;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .meta {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .section {
+      margin-top: 15px;
+    }
+
+    .section h3 {
+      margin: 10px 0 5px;
+      font-size: 15px;
+      color: #9ecbff;
+      border-bottom: 1px solid #2a2f3a;
+      padding-bottom: 4px;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    li {
+      margin-bottom: 5px;
+      line-height: 1.4;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 50px;
+      opacity: 0.7;
+    }
+
+    .error {
+      background: #2a1111;
+      border: 1px solid #ff4d4d;
+      padding: 15px;
+      border-radius: 8px;
+      color: #ffb3b3;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <header>Devlogs</header>
+
+  <div id="container">
+    <div class="loading" id="loading">Loading devlogs...</div>
+  </div>
+
+  <script src="functions/api/Devlog.js"></script>
+</body>
+</html>
