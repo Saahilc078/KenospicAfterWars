@@ -1,137 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Devlogs – KenospicAfterWars</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Devlogs – KenospicAfterWars</title>
 
-  <style>
-    @import url("https://fonts.googleapis.com/css?family=Roboto:100,300,100italic,300italic");
+<style>
+@import url("https://fonts.googleapis.com/css?family=Roboto:100,300,100italic,300italic");
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      font-family: 'Roboto', Arial, sans-serif;
-      background: #0f1115;
-      color: #e6e6e6;
-      min-height: 100vh;
-    }
+body {
+  font-family: 'Roboto', Arial, sans-serif;
+  background: #0f1115;
+  color: #e6e6e6;
+  min-height: 100vh;
+}
 
-    header {
-      padding: 40px;
-      text-align: center;
-      font-size: 32px;
-      font-weight: 100;
-      letter-spacing: 6px;
-      text-transform: uppercase;
-      background: #0f1115;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
+header {
+  padding: 40px;
+  text-align: center;
+  font-size: 32px;
+  font-weight: 100;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
 
-    #container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 48px 24px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 24px;
-    }
+#container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px;
+}
 
-    .log-card {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      border-radius: 10px;
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.15);
-      overflow: hidden;
-      cursor: pointer;
-    }
+/* CARD */
+.log-card {
+  position: relative;
+  aspect-ratio: 1/1;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(12px);
+}
 
-    .card-carousel {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-    }
+/* CAROUSEL */
+.card-carousel {
+  position: absolute;
+  inset: 0;
+}
 
-    .card-carousel img,
-    .card-carousel video {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0;
-      transition: opacity 0.5s ease;
-    }
+.card-carousel img,
+.card-carousel video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
 
-    .card-carousel img.active,
-    .card-carousel video.active {
-      opacity: 1;
-    }
+.card-carousel img.active,
+.card-carousel video.active {
+  opacity: 1;
+}
 
-    .card-carousel::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.75), transparent 60%);
-    }
+/* gradient */
+.card-carousel::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(to top, rgba(0,0,0,0.75), transparent 60%);
+}
 
-    .card-text-only {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      text-align: center;
-      z-index: 2;
-    }
+/* TEXT ONLY STATE */
+.card-text-only {
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:16px;
+}
 
-    .card-text-only p {
-      font-size: 13px;
-      color: rgba(255,255,255,0.85);
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 5;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
+.card-text-only p {
+  font-size:13px;
+  color: rgba(255,255,255,0.85);
+  display:-webkit-box;
+  -webkit-line-clamp:5;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
 
-    .card-label {
-      position: relative;
-      z-index: 3;
-      padding: 0 14px 12px;
-    }
+/* LABEL */
+.card-label {
+  position:absolute;
+  bottom:0;
+  width:100%;
+  padding: 10px 14px;
+  z-index:2;
+}
 
-    .card-line {
-      height: 1px;
-      background: rgba(255,255,255,0.6);
-      margin-bottom: 6px;
-    }
+.card-line {
+  height:1px;
+  background:rgba(255,255,255,0.6);
+  margin-bottom:6px;
+}
 
-    .card-date {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-    }
+.card-date {
+  font-size:12px;
+  letter-spacing:3px;
+  font-weight:700;
+  text-transform:uppercase;
+}
 
-    .loading {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 60px;
-      color: rgba(255,255,255,0.4);
-    }
+/* MODAL */
+#modal-overlay {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter: blur(18px);
+  z-index:100;
+  overflow:auto;
+  padding:40px;
+}
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
+#modal-overlay.open {
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+.modal-box {
+  max-width:800px;
+  width:100%;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:14px;
+  padding:36px;
+  color:white;
+}
+
+.modal-close {
+  position:absolute;
+  right:20px;
+  top:20px;
+  background:none;
+  border:none;
+  color:white;
+  font-size:24px;
+  cursor:pointer;
+}
+
+/* LIGHTBOX */
+#lightbox {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.9);
+  z-index:200;
+  align-items:center;
+  justify-content:center;
+}
+
+#lightbox.open { display:flex; }
+
+#lightbox img {
+  max-width:90%;
+  max-height:90%;
+}
+</style>
 </head>
 
 <body>
@@ -139,13 +184,28 @@
 <header>Devlogs</header>
 
 <div id="container">
-  <div class="loading" id="loading">Loading...</div>
+<div class="loading" id="loading">Loading...</div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div class="modal-box" id="modal-box">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div id="modal-inner"></div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <img id="lightbox-img"/>
 </div>
 
 <script>
+
 const container = document.getElementById("container");
 
-function esc(str) {
+/* ESC */
+function esc(str){
   return String(str ?? "")
     .replaceAll("&","&amp;")
     .replaceAll("<","&lt;")
@@ -154,111 +214,160 @@ function esc(str) {
     .replaceAll("'","&#039;");
 }
 
-function formatDateLabel(dateStr) {
-  const d = new Date(dateStr + "T12:00:00Z");
+/* DATE KEY */
+function getDateKey(post){
+  return new Date(post.date).toISOString().split("T")[0];
+}
+
+/* FORMAT LOG LABEL */
+function formatLog(dateStr){
+  const d = new Date(dateStr);
   return `LOG ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
 }
 
-async function loadDevlogs() {
-  try {
-    const res = await fetch("/api/devlogs", { cache: "no-store" });
-    const data = await res.text();
+/* GROUP POSTS BY DATE */
+function groupPosts(posts){
+  const map = new Map();
 
-    document.getElementById("loading")?.remove();
+  for(const p of posts){
+    const key = getDateKey(p);
 
-    let posts = JSON.parse(data);
-
-    container.innerHTML = "";
-
-    posts.forEach(post => {
-
-      const images = post.attachments.filter(a =>
-        (a.type?.startsWith("image/")) ||
-        /\.(png|jpg|jpeg|gif|webp)$/i.test(a.name || "")
-      );
-
-      const videos = post.attachments.filter(a =>
-        (a.type?.startsWith("video/")) ||
-        /\.(mp4|mov|webm)$/i.test(a.name || "")
-      );
-
-      const media = [...images, ...videos];
-      const hasMedia = media.length > 0;
-
-      const card = document.createElement("div");
-      card.className = "log-card";
-
-      let carousel = "";
-
-      if (hasMedia) {
-        carousel = `
-          <div class="card-carousel" data-index="0">
-            ${media.map((m, i) => {
-              const isVideo =
-                (m.type?.startsWith("video/")) ||
-                /\.(mp4|mov|webm)$/i.test(m.name || "");
-
-              return isVideo
-                ? `<video class="${i===0?'active':''}" muted playsinline>
-                     <source src="${esc(m.url)}">
-                   </video>`
-                : `<img src="${esc(m.url)}"
-                        class="${i===0?'active':''}">`;
-            }).join("")}
-          </div>
-        `;
-      }
-
-      const text = !hasMedia ? `
-        <div class="card-text-only">
-          <p>${esc(post.content || post.title)}</p>
-        </div>` : "";
-
-      const label = `
-        <div class="card-label">
-          <div class="card-line"></div>
-          <div class="card-date">${formatDateLabel(post.date)}</div>
-        </div>
-      `;
-
-      card.innerHTML = carousel + text + label;
-
-      card.addEventListener("click", () => {
-        console.log("open modal:", post.title);
+    if(!map.has(key)){
+      map.set(key,{
+        date: p.date,
+        title: p.title,
+        content: p.content || "",
+        attachments: [...(p.attachments || [])],
+        avatar: p.avatar,
+        author: p.author
       });
+    } else {
+      const existing = map.get(key);
 
-      container.appendChild(card);
-
-      if (hasMedia && media.length > 1) {
-        const carouselEl = card.querySelector(".card-carousel");
-        const items = carouselEl.querySelectorAll("img, video");
-
-        setInterval(() => {
-          let current = Number(carouselEl.dataset.index || 0);
-
-          items[current].classList.remove("active");
-          if (items[current].tagName === "VIDEO") items[current].pause();
-
-          const next = (current + 1) % items.length;
-
-          items[next].classList.add("active");
-          if (items[next].tagName === "VIDEO") {
-            items[next].currentTime = 0;
-            items[next].play().catch(()=>{});
-          }
-
-          carouselEl.dataset.index = next;
-        }, 3000);
-      }
-    });
-
-  } catch (err) {
-    container.innerHTML = `<pre style="color:red;">${esc(err.message)}</pre>`;
+      existing.content += "\n" + (p.content || "");
+      existing.attachments.push(...(p.attachments || []));
+    }
   }
+
+  return Array.from(map.values());
+}
+
+/* MODAL */
+function openModal(post){
+
+  document.getElementById("modal-inner").innerHTML = `
+    <div>
+      <h2>${esc(post.title)}</h2>
+      <p style="opacity:.6">${esc(post.author)} · ${formatLog(post.date)}</p>
+      <div style="margin-top:20px">${esc(post.content)}</div>
+    </div>
+  `;
+
+  document.getElementById("modal-overlay").classList.add("open");
+}
+
+/* LIGHTBOX */
+const lightbox = document.getElementById("lightbox");
+const lightboxImg = document.getElementById("lightbox-img");
+
+function openLightbox(src){
+  lightboxImg.src = src;
+  lightbox.classList.add("open");
+}
+
+lightbox.onclick = () => lightbox.classList.remove("open");
+
+/* CLOSE MODAL */
+document.getElementById("modal-close").onclick = () =>
+  document.getElementById("modal-overlay").classList.remove("open");
+
+/* LOAD */
+async function loadDevlogs(){
+
+  const res = await fetch("/api/devlogs",{cache:"no-store"});
+  const posts = await res.json();
+
+  const grouped = groupPosts(posts);
+
+  container.innerHTML = "";
+
+  grouped.forEach(post => {
+
+    const images = post.attachments.filter(a =>
+      (a.type?.startsWith("image/")) || /\.(png|jpg|jpeg|gif|webp)$/i.test(a.name||"")
+    );
+
+    const videos = post.attachments.filter(a =>
+      (a.type?.startsWith("video/")) || /\.(mp4|mov|webm)$/i.test(a.name||"")
+    );
+
+    const media = [...images, ...videos];
+    const hasMedia = media.length > 0;
+
+    const card = document.createElement("div");
+    card.className = "log-card";
+
+    let carousel = "";
+
+    if(hasMedia){
+      carousel = `
+      <div class="card-carousel" data-index="0">
+        ${media.map((m,i)=>{
+
+          const isVideo =
+            (m.type?.startsWith("video/")) ||
+            /\.(mp4|mov|webm)$/i.test(m.name||"");
+
+          return isVideo
+            ? `<video class="${i===0?'active':''}" muted playsinline>
+                 <source src="${esc(m.url)}">
+               </video>`
+            : `<img src="${esc(m.url)}" class="${i===0?'active':''}">`;
+
+        }).join("")}
+      </div>`;
+    }
+
+    /* IMPORTANT CHANGE */
+    const fallback = !hasMedia ? `
+      <div class="card-text-only">
+        <p>LOG ${formatLog(post.date)}</p>
+      </div>` : "";
+
+    const label = `
+      <div class="card-label">
+        <div class="card-line"></div>
+        <div class="card-date">${formatLog(post.date)}</div>
+      </div>
+    `;
+
+    card.innerHTML = carousel + fallback + label;
+
+    /* CLICK WORKING AGAIN */
+    card.onclick = () => openModal(post);
+
+    container.appendChild(card);
+
+    /* carousel */
+    if(hasMedia && media.length > 1){
+      const c = card.querySelector(".card-carousel");
+      const items = c.querySelectorAll("img,video");
+
+      setInterval(()=>{
+        let i = Number(c.dataset.index||0);
+        items[i].classList.remove("active");
+
+        const next = (i+1)%items.length;
+        items[next].classList.add("active");
+
+        c.dataset.index = next;
+      },3000);
+    }
+  });
 }
 
 loadDevlogs();
-</script>
 
+</script>
 </body>
 </html>
