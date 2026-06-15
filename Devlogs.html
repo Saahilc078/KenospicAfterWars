@@ -4,15 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Devlogs – KenospicAfterWars</title>
-
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
       background: #0f1115;
       color: #e6e6e6;
+      min-height: 100vh;
     }
 
     header {
@@ -22,13 +21,13 @@
       font-weight: bold;
       background: #151922;
       border-bottom: 1px solid #2a2f3a;
-      letter-spacing: 2px;
+      letter-spacing: 3px;
     }
 
     #container {
-      max-width: 900px;
+      max-width: 860px;
       margin: 0 auto;
-      padding: 30px 20px;
+      padding: 36px 20px;
     }
 
     /* ── Card ── */
@@ -36,34 +35,32 @@
       background: #161b22;
       border: 1px solid #2a2f3a;
       border-radius: 12px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
+      overflow: hidden;
+      margin-bottom: 32px;
       transition: border-color 0.2s;
     }
-
-    .card:hover {
-      border-color: #4a5568;
-    }
+    .card:hover { border-color: #4a5568; }
 
     .card-header {
       display: flex;
       align-items: center;
       gap: 14px;
-      margin-bottom: 14px;
+      padding: 18px 22px;
+      border-bottom: 1px solid #2a2f3a;
     }
 
     .avatar {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
+      object-fit: cover;
       background: #2a2f3a;
       flex-shrink: 0;
-      object-fit: cover;
     }
 
     .avatar-placeholder {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       background: #2a2f3a;
       display: flex;
@@ -73,10 +70,10 @@
       flex-shrink: 0;
     }
 
-    .title {
-      font-size: 18px;
+    .post-title {
+      font-size: 17px;
       font-weight: bold;
-      color: #ffffff;
+      color: #fff;
       margin-bottom: 3px;
     }
 
@@ -85,57 +82,129 @@
       color: #8b949e;
     }
 
-    /* ── Content ── */
+    /* ── Body ── */
+    .card-body {
+      padding: 20px 22px;
+    }
+
     .content {
-      line-height: 1.65;
+      line-height: 1.7;
       color: #c9d1d9;
+      margin-bottom: 16px;
     }
 
-    .content h3 {
-      margin: 14px 0 6px;
-      font-size: 14px;
-      font-weight: bold;
-      color: #9ecbff;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      border-bottom: 1px solid #2a2f3a;
-      padding-bottom: 4px;
-    }
+    .content:empty { display: none; }
 
-    .content p {
-      margin: 6px 0;
-    }
+    .content p { margin-bottom: 8px; }
+    .content p:last-child { margin-bottom: 0; }
 
     .content ul {
-      margin: 6px 0 6px 18px;
-      padding: 0;
+      margin: 6px 0 10px 20px;
       list-style: disc;
     }
 
-    .content li {
-      margin-bottom: 4px;
+    .content li { margin-bottom: 4px; }
+
+    .content h3 {
+      font-size: 13px;
+      font-weight: bold;
+      color: #9ecbff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #2a2f3a;
+      padding-bottom: 4px;
+      margin: 14px 0 8px;
     }
+
+    /* ── Media grid ── */
+    .media-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+
+    .media-grid.single {
+      grid-template-columns: 1fr;
+    }
+
+    .media-item {
+      border-radius: 8px;
+      overflow: hidden;
+      background: #0d1117;
+      max-height: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .media-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .media-item img:hover { opacity: 0.85; }
+
+    .media-item video {
+      width: 100%;
+      max-height: 480px;
+      display: block;
+      border-radius: 8px;
+    }
+
+    /* ── Lightbox ── */
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      cursor: zoom-out;
+    }
+    #lightbox.open { display: flex; }
+
+    #lightbox img {
+      max-width: 100%;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.8);
+    }
+
+    #lightbox-close {
+      position: fixed;
+      top: 16px;
+      right: 20px;
+      font-size: 28px;
+      color: #fff;
+      cursor: pointer;
+      line-height: 1;
+      opacity: 0.8;
+    }
+    #lightbox-close:hover { opacity: 1; }
 
     /* ── States ── */
     .loading {
       text-align: center;
       padding: 60px;
       color: #8b949e;
-      font-size: 15px;
     }
-
     .loading::after {
       content: '';
       display: block;
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       border: 3px solid #2a2f3a;
       border-top-color: #9ecbff;
       border-radius: 50%;
-      margin: 16px auto 0;
+      margin: 14px auto 0;
       animation: spin 0.8s linear infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .error {
@@ -163,7 +232,31 @@
     <div class="loading" id="loading">Loading devlogs</div>
   </div>
 
+  <!-- Lightbox -->
+  <div id="lightbox">
+    <span id="lightbox-close">✕</span>
+    <img id="lightbox-img" src="" alt=""/>
+  </div>
+
   <script>
+    // ── Lightbox ──
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImg = document.getElementById("lightbox-img");
+
+    document.getElementById("lightbox-close").onclick = closeLightbox;
+    lightbox.addEventListener("click", e => { if (e.target === lightbox) closeLightbox(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
+
+    function openLightbox(src) {
+      lightboxImg.src = src;
+      lightbox.classList.add("open");
+    }
+    function closeLightbox() {
+      lightbox.classList.remove("open");
+      lightboxImg.src = "";
+    }
+
+    // ── Main ──
     async function loadDevlogs() {
       const container = document.getElementById("container");
       const loading = document.getElementById("loading");
@@ -179,9 +272,15 @@
           return;
         }
 
-        const posts = parsePosts(text);
+        let posts;
+        try {
+          posts = JSON.parse(text);
+        } catch {
+          container.innerHTML = `<pre class="error">Failed to parse response:\n${escapeHtml(text)}</pre>`;
+          return;
+        }
 
-        if (posts.length === 0) {
+        if (!posts.length) {
           container.innerHTML = `<div class="empty">No devlogs found.</div>`;
           return;
         }
@@ -193,7 +292,7 @@
           card.className = "card";
 
           const avatarHtml = post.avatar
-            ? `<img class="avatar" src="${escapeHtml(post.avatar)}" alt="${escapeHtml(post.author)}" onerror="this.outerHTML='<div class=&quot;avatar-placeholder&quot;>📋</div>'">`
+            ? `<img class="avatar" src="${escapeHtml(post.avatar)}" alt="${escapeHtml(post.author)}" onerror="this.outerHTML='<div class=\\'avatar-placeholder\\'>📋</div>'">`
             : `<div class="avatar-placeholder">📋</div>`;
 
           const dateStr = post.date
@@ -202,15 +301,47 @@
               })
             : "Unknown date";
 
+          // Media
+          const images = post.attachments.filter(a =>
+            a.type.startsWith("image/") || /\.(png|jpg|jpeg|gif|webp)$/i.test(a.name)
+          );
+          const videos = post.attachments.filter(a =>
+            a.type.startsWith("video/") || /\.(mp4|mov|webm)$/i.test(a.name)
+          );
+
+          const totalMedia = images.length + videos.length;
+          let mediaHtml = "";
+
+          if (totalMedia > 0) {
+            const gridClass = totalMedia === 1 ? "media-grid single" : "media-grid";
+            const items = [
+              ...images.map(img => `
+                <div class="media-item">
+                  <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.name)}"
+                       onclick="openLightbox('${escapeHtml(img.url)}')">
+                </div>`),
+              ...videos.map(vid => `
+                <div class="media-item">
+                  <video controls preload="metadata">
+                    <source src="${escapeHtml(vid.url)}" type="${escapeHtml(vid.type || 'video/mp4')}">
+                  </video>
+                </div>`)
+            ].join("");
+            mediaHtml = `<div class="${gridClass}">${items}</div>`;
+          }
+
           card.innerHTML = `
             <div class="card-header">
               ${avatarHtml}
               <div>
-                <div class="title">${escapeHtml(post.title)}</div>
+                <div class="post-title">${escapeHtml(post.title)}</div>
                 <div class="meta">${escapeHtml(post.author)} · ${dateStr}</div>
               </div>
             </div>
-            <div class="content">${formatContent(post.content)}</div>
+            <div class="card-body">
+              <div class="content">${formatContent(post.content)}</div>
+              ${mediaHtml}
+            </div>
           `;
 
           container.appendChild(card);
@@ -219,44 +350,18 @@
       } catch (err) {
         console.error(err);
         if (loading) loading.remove();
-        container.innerHTML = `<div class="error">Failed to load devlogs: ${escapeHtml(err.message)}</div>`;
+        container.innerHTML = `<div class="error">Failed to load: ${escapeHtml(err.message)}</div>`;
       }
     }
 
-    function parsePosts(text) {
-      return text
-        .split("===POST===")
-        .map(block => block.trim())
-        .filter(Boolean)
-        .map(block => {
-          const lines = block.split("\n");
-          let title = "", author = "", date = "", avatar = "";
-          const contentStart = lines.indexOf("CONTENT:");
-
-          for (const line of lines) {
-            if (line.startsWith("TITLE:"))  title  = line.slice(6).trim();
-            if (line.startsWith("AUTHOR:")) author = line.slice(7).trim();
-            if (line.startsWith("DATE:"))   date   = line.slice(5).trim();
-            if (line.startsWith("AVATAR:")) avatar = line.slice(7).trim();
-          }
-
-          const content = contentStart >= 0
-            ? lines.slice(contentStart + 1).join("\n").replace(/===END===.*$/s, "").trim()
-            : "";
-
-          return { title, author, date, avatar, content };
-        })
-        .filter(p => p.title || p.content); // drop completely empty blocks
-    }
-
     function formatContent(text) {
-      if (!text || text === "(no content)") return "<i style='color:#8b949e'>No content</i>";
+      if (!text) return "";
 
       const lines = text.split("\n");
       let html = "";
       let inList = false;
 
-      for (let raw of lines) {
+      for (const raw of lines) {
         const line = raw.trim();
 
         if (!line) {
@@ -264,7 +369,6 @@
           continue;
         }
 
-        // Bullet point
         if (line.startsWith("- ") || line.startsWith("• ")) {
           if (!inList) { html += "<ul>"; inList = true; }
           html += `<li>${escapeHtml(line.slice(2).trim())}</li>`;
@@ -273,8 +377,8 @@
 
         if (inList) { html += "</ul>"; inList = false; }
 
-        // Section heading: all-caps or Title Case, short, no punctuation at end
-        if (/^[A-Z][A-Za-z0-9 ]+$/.test(line) && line.length < 50 && line === line.toUpperCase()) {
+        // ALL CAPS short line = section heading
+        if (line === line.toUpperCase() && line.length < 50 && /[A-Z]/.test(line)) {
           html += `<h3>${escapeHtml(line)}</h3>`;
           continue;
         }
