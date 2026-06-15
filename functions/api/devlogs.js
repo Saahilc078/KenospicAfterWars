@@ -7,71 +7,77 @@ export async function onRequest(context) {
       return new Response("Missing env variables: DISCORD_TOKEN or DISCORD_CHANNEL", { status: 500 });
     }
 
-    const res = await fetch(
-      `https://discord.com/api/v10/channels/${channel}/messages?limit=100`,
-      {
-        headers: { Authorization: `Bot ${token}` }
+    // Fetch all messages via pagination (Discord max 100 per request)
+    async function fetchAllMessages() {
+      const all = [];
+      let before = null;
+
+      while (true) {
+        const url = `https://discord.com/api/v10/channels/${channel}/messages?limit=100`
+          + (before ? `&before=${before}` : "");
+
+        const res = await fetch(url, {
+          headers: { Authorization: `Bot ${token}` }
+        });
+
+        const text = await res.text();
+        let batch;
+        try { batch = JSON.parse(text); }
+        catch { throw new Error("Discord returned invalid JSON: " + text); }
+
+        if (!Array.isArray(batch)) {
+          throw new Error("Discord API error: " + JSON.stringify(batch));
+        }
+
+        if (batch.length === 0) break;
+
+        all.push(...batch);
+        before = batch[batch.length - 1].id; // oldest message id in this batch
+
+        // Stop if we got fewer than 100 (last page)
+        if (batch.length < 100) break;
+
+        // Safety cap: don't fetch more than 1000 messages
+        if (all.length >= 1000) break;
       }
-    );
 
-    const text = await res.text();
-    let messages;
-    try {
-      messages = JSON.parse(text);
-    } catch {
-      return new Response("Discord returned invalid JSON:\n" + text, { status: 500 });
+      return all;
     }
 
-    if (!Array.isArray(messages)) {
-      return new Response("Discord API error: " + JSON.stringify(messages, null, 2), { status: 500 });
+    function isLogMessage(msg) {
+      // Matches: LOGS, #LOGS, # LOGS, ## LOGS, ### LOGS, # logs, etc.
+      return /^#{0,3}\s*LOGS\b/i.test((msg.content || "").trimStart());
     }
 
-    // Only keep messages that start with "LOGS"
-    const logMessages = messages.filter(msg =>
-      (msg.content || "").trimStart().toUpperCase().startsWith("LOGS")
-    );
+    function stripLogsLine(content) {
+      // Remove the first line (the LOGS header) regardless of # prefix
+      return content.split("\n").slice(1).join("\n").trim();
+    }
 
-    // Group by UTC date (YYYY-MM-DD)
+    const messages = await fetchAllMessages();
+    const logMessages = messages.filter(isLogMessage);
+
+    // Group by UTC date
     const byDate = {};
     for (const msg of logMessages) {
-      const date = msg.timestamp.slice(0, 10); // "2024-03-15"
-      if (!byDate[date]) {
-        byDate[date] = { date, messages: [] };
-      }
+      const date = msg.timestamp.slice(0, 10);
+      if (!byDate[date]) byDate[date] = { date, messages: [] };
       byDate[date].messages.push(msg);
     }
 
-    // Build one post per date, most recent first
+    // Build posts, most recent first
     const posts = Object.values(byDate)
       .sort((a, b) => b.date.localeCompare(a.date))
       .map(group => {
-        // Sort messages within the day oldest-first so content reads in order
         group.messages.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
-        // Merge all text content, skip duplicate "LOGS" headers after the first
-        let title = "";
         const contentParts = [];
         const attachments = [];
 
-        group.messages.forEach((msg, i) => {
-          const body = (msg.content || "").trim();
-          const lines = body.split("\n");
+        group.messages.forEach(msg => {
+          const rest = stripLogsLine((msg.content || "").trim());
+          if (rest) contentParts.push(rest);
 
-          if (i === 0) {
-            // First message: first line is the title, rest is content
-            title = lines[0].trim();
-            const rest = lines.slice(1).join("\n").trim();
-            if (rest) contentParts.push(rest);
-          } else {
-            // Subsequent messages on the same day: skip the LOGS line, keep rest
-            const rest = lines
-              .filter((l, idx) => !(idx === 0 && l.trim().toUpperCase().startsWith("LOGS")))
-              .join("\n")
-              .trim();
-            if (rest) contentParts.push(rest);
-          }
-
-          // Collect all attachments
           (msg.attachments || []).forEach(a => {
             attachments.push({
               url: a.url,
@@ -81,11 +87,13 @@ export async function onRequest(context) {
           });
         });
 
-        // Use the author from the first message
+        const [, month, day] = group.date.split("-");
+        const title = `LOG ${day}.${month}`;
+
         const firstMsg = group.messages[0];
 
         return {
-          title: title || "LOGS",
+          title,
           date: group.date,
           author: firstMsg.author?.username || "unknown",
           avatar: firstMsg.author?.avatar
