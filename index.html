@@ -1,0 +1,239 @@
+<!DOCTYPE HTML>
+<!--
+	Landed by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>KenospicAfterWars</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+		
+
+<body>	
+    <div id="loading-screen">
+    <div class="loading-title">
+        Kenospic After Wars
+    </div>
+</div>
+<div id="scrolly-video"></div>
+<div id="content">
+ 		<div class="card-wrap">
+        <img src="Untitleds/tile.png" alt="Background">
+    </div>
+
+		<div class="card-wrap">
+        
+    </div>
+<div class="card-wrap">
+         </div> 
+</section>
+        </div>
+        <div class="card">
+             <img src="Untitleds/banner1.png" alt="Background">
+            <div class="card-content center">
+            <span class="card-number" data-count="4">0</span>
+            <p>Procedural Game Modes</p>
+            </div>
+        </div>
+         <div class="card-wrap">
+         </div> 
+             <div class="card">
+             <img src="Untitleds/banner2.png" alt="Background">
+            <div class="card-content right">
+                 <span class="card-number" data-count="62">0</span>
+            Community members
+            </div>
+        </div>
+        </div>
+         <div class="card-wrap">
+         </div> 
+   
+            <div class="card">
+                <img src="Untitleds/banner3.png" alt="Background">  
+           <div class="card-content center">
+                
+            All out war
+            </div>
+            
+            </div>
+          <div class="card-wrap">
+         </div> 
+		    
+        
+
+
+			<!-- Three -->
+
+			<!-- Four -->
+		<section id="four" class="spotlight video left">
+   <section class="hero-image">
+
+   <video autoplay muted loop playsinline class="bg-video">
+            <source src="Untitleds/Trans2full.mov" type="video/mp4">
+        </video>
+    <div class="overlay-buttons">
+
+        <a href="https://discord.gg/TPTfhEaKN9" class="glass-button">
+            <div class="button-icon">
+                <i class="icon brands fa-discord"></i>
+            </div>
+
+            <div class="button-divider"></div>
+
+            <div class="button-text">
+                Discord
+            </div>
+        </a>
+
+        <a href="https://www.youtube.com/watch?v=V5l5QxlsLcQ&t=423s" class="glass-button">
+            <div class="button-icon">
+                 <i class="icon brands fa-youtube"></i>
+            </div>
+
+            <div class="button-divider"></div>
+
+            <div class="button-text">
+                Devlogs
+            </div>
+        </a>
+
+        <a href="#" class="glass-button">
+            <div class="button-icon">
+                 <i class="icon brands fa-steam"></i>
+            </div>
+
+            <div class="button-divider"></div>
+
+            <div class="button-text">
+                Not Active
+            </div>
+        </a>
+
+    
+
+    </div>
+
+</section>
+
+</section>
+   
+
+</section>
+
+		</div>
+</body>
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+			<script src="https://cdn.jsdelivr.net/npm/scrolly-video@latest/dist/scrolly-video.js"></script>
+<script type="text/javascript">
+  new ScrollyVideo({
+    scrollyVideoContainer: "scrolly-video",
+    src: "Untitleds/Trans2full.mov"
+  });
+  const el = document.getElementById("scrolly-video");
+
+el.style.position = "fixed";
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const counters = document.querySelectorAll(".card-number");
+
+    const observer = new IntersectionObserver((entries, observer) => {
+
+        entries.forEach(entry => {
+
+            if (!entry.isIntersecting) return;
+
+            const counter = entry.target;
+            const target = parseInt(counter.getAttribute("data-count"), 10);
+
+            animateCount(counter, target);
+
+            observer.unobserve(counter); // run only once
+        });
+
+    }, {
+        threshold: 0.4
+    });
+
+    counters.forEach(counter => observer.observe(counter));
+
+    function animateCount(counter, target) {
+
+        const duration = 2500; // slower = more cinematic
+        const startTime = performance.now();
+
+        function update(currentTime) {
+
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // smooth ease-out (slow finish, fast start)
+            const eased = 1 - Math.pow(1 - progress, 3);
+
+            const value = Math.floor(eased * target);
+
+            counter.textContent = value;
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                counter.textContent = target;
+            }
+        }
+
+        requestAnimationFrame(update);
+    }
+
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const cards = document.querySelectorAll(".card");
+
+    const observer = new IntersectionObserver((entries, observer) => {
+
+        entries.forEach(entry => {
+
+            if (!entry.isIntersecting) return;
+
+            entry.target.classList.add("in-view");
+
+            observer.unobserve(entry.target); // run once only
+        });
+
+    }, {
+        threshold: 0.4
+    });
+
+    cards.forEach(card => observer.observe(card));
+
+});
+</script>
+<script>
+window.addEventListener("load", () => {
+
+    const loader = document.getElementById("loading-screen");
+
+    setTimeout(() => {
+        loader.classList.add("hide");
+    }, 1200); // delay so title is readable
+
+});
+</script>
+	</body>
+</html>
