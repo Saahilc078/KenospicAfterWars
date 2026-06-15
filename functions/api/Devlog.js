@@ -20,25 +20,22 @@ export async function onRequest(context) {
 
     const messages = await response.json();
 
-    const posts = messages.reverse().map(msg => ({
+    const posts = messages.reverse().map(msg => {
 
-        id: msg.id,
+        const avatarHash = msg.author.avatar
+            ? `https://cdn.discordapp.com/avatars/${msg.author.id}/${msg.author.avatar}.png`
+            : `https://cdn.discordapp.com/embed/avatars/0.png`;
 
-        title: msg.content.split("\n")[0],
-
-        content: msg.content,
-
-        author: msg.author.username,
-
-        avatar:
-            `https://cdn.discordapp.com/avatars/${msg.author.id}/${msg.author.avatar}.png`,
-
-        date: msg.timestamp,
-
-        images:
-            msg.attachments.map(a => a.url)
-
-    }));
+        return {
+            id: msg.id,
+            title: msg.content.split("\n")[0] || "Untitled",
+            content: msg.content,
+            author: msg.author.username,
+            avatar: avatarHash,
+            date: msg.timestamp,
+            images: msg.attachments.map(a => a.url)
+        };
+    });
 
     return Response.json(posts);
 }
