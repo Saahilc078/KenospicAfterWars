@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Devlogs</title>
+  <title>Devlogs – KenospicAfterWars</title>
 
   <style>
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -20,80 +22,136 @@
       font-weight: bold;
       background: #151922;
       border-bottom: 1px solid #2a2f3a;
+      letter-spacing: 2px;
     }
 
     #container {
       max-width: 900px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 30px 20px;
     }
 
+    /* ── Card ── */
     .card {
       background: #161b22;
       border: 1px solid #2a2f3a;
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 20px;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover {
+      border-color: #4a5568;
     }
 
     .card-header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
+      gap: 14px;
+      margin-bottom: 14px;
     }
 
     .avatar {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
+      background: #2a2f3a;
+      flex-shrink: 0;
+      object-fit: cover;
+    }
+
+    .avatar-placeholder {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #2a2f3a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
     }
 
     .title {
       font-size: 18px;
       font-weight: bold;
+      color: #ffffff;
+      margin-bottom: 3px;
     }
 
     .meta {
       font-size: 12px;
-      opacity: 0.7;
+      color: #8b949e;
     }
 
-    .section {
-      margin-top: 15px;
+    /* ── Content ── */
+    .content {
+      line-height: 1.65;
+      color: #c9d1d9;
     }
 
-    .section h3 {
-      margin: 10px 0 5px;
-      font-size: 15px;
+    .content h3 {
+      margin: 14px 0 6px;
+      font-size: 14px;
+      font-weight: bold;
       color: #9ecbff;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
       border-bottom: 1px solid #2a2f3a;
       padding-bottom: 4px;
     }
 
-    ul {
-      margin: 0;
-      padding-left: 18px;
+    .content p {
+      margin: 6px 0;
     }
 
-    li {
-      margin-bottom: 5px;
-      line-height: 1.4;
+    .content ul {
+      margin: 6px 0 6px 18px;
+      padding: 0;
+      list-style: disc;
     }
 
+    .content li {
+      margin-bottom: 4px;
+    }
+
+    /* ── States ── */
     .loading {
       text-align: center;
-      padding: 50px;
-      opacity: 0.7;
+      padding: 60px;
+      color: #8b949e;
+      font-size: 15px;
     }
+
+    .loading::after {
+      content: '';
+      display: block;
+      width: 32px;
+      height: 32px;
+      border: 3px solid #2a2f3a;
+      border-top-color: #9ecbff;
+      border-radius: 50%;
+      margin: 16px auto 0;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .error {
       background: #2a1111;
       border: 1px solid #ff4d4d;
-      padding: 15px;
+      padding: 16px;
       border-radius: 8px;
       color: #ffb3b3;
       white-space: pre-wrap;
+      font-size: 13px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 60px;
+      color: #8b949e;
     }
   </style>
 </head>
@@ -102,9 +160,142 @@
   <header>Devlogs</header>
 
   <div id="container">
-    <div class="loading" id="loading">Loading devlogs...</div>
+    <div class="loading" id="loading">Loading devlogs</div>
   </div>
 
-  <script src="Devlog.js"></script>
+  <script>
+    async function loadDevlogs() {
+      const container = document.getElementById("container");
+      const loading = document.getElementById("loading");
+
+      try {
+        const res = await fetch("/api/devlogs", { cache: "no-store" });
+        const text = await res.text();
+
+        loading?.remove();
+
+        if (!res.ok) {
+          container.innerHTML = `<pre class="error">${escapeHtml(text)}</pre>`;
+          return;
+        }
+
+        const posts = parsePosts(text);
+
+        if (posts.length === 0) {
+          container.innerHTML = `<div class="empty">No devlogs found.</div>`;
+          return;
+        }
+
+        container.innerHTML = "";
+
+        posts.forEach(post => {
+          const card = document.createElement("div");
+          card.className = "card";
+
+          const avatarHtml = post.avatar
+            ? `<img class="avatar" src="${escapeHtml(post.avatar)}" alt="${escapeHtml(post.author)}" onerror="this.outerHTML='<div class=&quot;avatar-placeholder&quot;>📋</div>'">`
+            : `<div class="avatar-placeholder">📋</div>`;
+
+          const dateStr = post.date
+            ? new Date(post.date).toLocaleDateString("en-AU", {
+                year: "numeric", month: "long", day: "numeric"
+              })
+            : "Unknown date";
+
+          card.innerHTML = `
+            <div class="card-header">
+              ${avatarHtml}
+              <div>
+                <div class="title">${escapeHtml(post.title)}</div>
+                <div class="meta">${escapeHtml(post.author)} · ${dateStr}</div>
+              </div>
+            </div>
+            <div class="content">${formatContent(post.content)}</div>
+          `;
+
+          container.appendChild(card);
+        });
+
+      } catch (err) {
+        console.error(err);
+        if (loading) loading.remove();
+        container.innerHTML = `<div class="error">Failed to load devlogs: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function parsePosts(text) {
+      return text
+        .split("===POST===")
+        .map(block => block.trim())
+        .filter(Boolean)
+        .map(block => {
+          const lines = block.split("\n");
+          let title = "", author = "", date = "", avatar = "";
+          const contentStart = lines.indexOf("CONTENT:");
+
+          for (const line of lines) {
+            if (line.startsWith("TITLE:"))  title  = line.slice(6).trim();
+            if (line.startsWith("AUTHOR:")) author = line.slice(7).trim();
+            if (line.startsWith("DATE:"))   date   = line.slice(5).trim();
+            if (line.startsWith("AVATAR:")) avatar = line.slice(7).trim();
+          }
+
+          const content = contentStart >= 0
+            ? lines.slice(contentStart + 1).join("\n").replace(/===END===.*$/s, "").trim()
+            : "";
+
+          return { title, author, date, avatar, content };
+        })
+        .filter(p => p.title || p.content); // drop completely empty blocks
+    }
+
+    function formatContent(text) {
+      if (!text || text === "(no content)") return "<i style='color:#8b949e'>No content</i>";
+
+      const lines = text.split("\n");
+      let html = "";
+      let inList = false;
+
+      for (let raw of lines) {
+        const line = raw.trim();
+
+        if (!line) {
+          if (inList) { html += "</ul>"; inList = false; }
+          continue;
+        }
+
+        // Bullet point
+        if (line.startsWith("- ") || line.startsWith("• ")) {
+          if (!inList) { html += "<ul>"; inList = true; }
+          html += `<li>${escapeHtml(line.slice(2).trim())}</li>`;
+          continue;
+        }
+
+        if (inList) { html += "</ul>"; inList = false; }
+
+        // Section heading: all-caps or Title Case, short, no punctuation at end
+        if (/^[A-Z][A-Za-z0-9 ]+$/.test(line) && line.length < 50 && line === line.toUpperCase()) {
+          html += `<h3>${escapeHtml(line)}</h3>`;
+          continue;
+        }
+
+        html += `<p>${escapeHtml(line)}</p>`;
+      }
+
+      if (inList) html += "</ul>";
+      return html;
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    loadDevlogs();
+  </script>
 </body>
 </html>
