@@ -55,3 +55,5 @@ export async function onRequest(context) {
         });
     }
 }
+console.log("TOKEN EXISTS:", !!context.env.DISCORD_TOKEN);
+console.log("CHANNEL:", context.env.DISCORD_CHANNEL);
