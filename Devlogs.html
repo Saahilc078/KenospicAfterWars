@@ -93,7 +93,8 @@
       z-index: 0;
     }
 
-    .card-carousel img {
+    .card-carousel img,
+    .card-carousel video {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -103,8 +104,13 @@
       transition: opacity 0.6s ease;
     }
 
-    .card-carousel img.active {
+    .card-carousel img.active,
+    .card-carousel video.active {
       opacity: 1;
+    }
+
+    .card-carousel video {
+      pointer-events: none;
     }
 
     /* Dark gradient over image so text is readable */
@@ -129,15 +135,12 @@
     }
 
     .card-text-only p {
-      font-size: 13px;
-      font-weight: 300;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
       color: rgba(255,255,255,0.85);
-      line-height: 1.6;
-      /* clamp to ~4 lines */
-      display: -webkit-box;
-      -webkit-line-clamp: 5;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      line-height: 1.5;
+      text-transform: uppercase;
       transition: color 0.35s ease;
     }
 
@@ -178,8 +181,23 @@
       color: #111;
     }
 
-    /* Hide date label when card has no images (text-only shows text instead) */
-    .log-card.no-image .card-label {
+    .log-card.inert {
+      cursor: default;
+    }
+
+    .log-card.inert:hover {
+      background: rgba(255,255,255,0.08);
+      transform: none;
+      box-shadow: none;
+    }
+
+    .log-card.inert:hover::before {
+      top: -100%;
+      left: -100%;
+    }
+
+    /* Hide bottom label when card has no media (text-only shows LOG date instead) */
+    .log-card.no-media .card-label {
       display: none;
     }
 
@@ -487,10 +505,8 @@
              onerror="this.outerHTML='<div class=\\'modal-avatar-placeholder\\'>📋</div>'">`
         : `<div class="modal-avatar-placeholder">📋</div>`;
 
-      const images = post.attachments.filter(a =>
-        a.type.startsWith("image/") || /\.(png|jpg|jpeg|gif|webp)$/i.test(a.name));
-      const videos = post.attachments.filter(a =>
-        a.type.startsWith("video/") || /\.(mp4|mov|webm)$/i.test(a.name));
+      const images = getImages(post);
+      const videos = getVideos(post);
 
       const totalMedia = images.length + videos.length;
       let mediaHtml = "";
@@ -558,54 +574,73 @@
         container.innerHTML = "";
 
         posts.forEach(post => {
-          const images = post.attachments.filter(a =>
-            a.type.startsWith("image/") || /\.(png|jpg|jpeg|gif|webp)$/i.test(a.name));
-
-          const hasImages = images.length > 0;
+          const images = getImages(post);
+          const videos = getVideos(post);
+          const media = [...images, ...videos];
+          const hasMedia = media.length > 0;
+          const hasModalContent = Boolean(
+            String(post.content || "").trim() || media.length
+          );
+          const dateLabel = getLogDateLabel(post.date);
 
           const card = document.createElement("div");
-          card.className = "log-card" + (hasImages ? "" : " no-image");
+          card.className = [
+            "log-card",
+            hasMedia ? "" : "no-media",
+            hasModalContent ? "" : "inert"
+          ].filter(Boolean).join(" ");
 
-          // Carousel (images only — videos stay in modal)
+          // Carousel all card-safe media.
           let carouselHtml = "";
-          if (hasImages) {
-            const imgs = images.map((img, i) =>
-              `<img src="${esc(img.url)}" alt="${esc(img.name)}" class="${i === 0 ? 'active' : ''}" loading="lazy">`
+          if (hasMedia) {
+            const items = media.map((item, i) =>
+              item.kind === "video"
+                ? `<video class="${i === 0 ? 'active' : ''}" muted loop playsinline preload="metadata">
+                    <source src="${esc(item.url)}" type="${esc(item.type || 'video/mp4')}">
+                  </video>`
+                : `<img src="${esc(item.url)}" alt="${esc(item.name)}" class="${i === 0 ? 'active' : ''}" loading="lazy">`
             ).join("");
-            carouselHtml = `<div class="card-carousel" data-index="0">${imgs}</div>`;
+            carouselHtml = `<div class="card-carousel" data-index="0">${items}</div>`;
           }
 
-          // Bottom label (only shown when there are images)
-          const labelHtml = hasImages ? `
+          // Bottom label (only shown when there is media)
+          const labelHtml = hasMedia ? `
             <div class="card-label">
               <div class="card-line"></div>
-              <div class="card-date">${esc(post.title)}</div>
+              <div class="card-date">${esc(dateLabel)}</div>
             </div>` : "";
 
-          // Text preview (only shown when no images)
-          const textHtml = !hasImages ? `
+          // Text preview (only shown when no media)
+          const textHtml = !hasMedia ? `
             <div class="card-text-only">
-              <p>${esc(post.content || post.title)}</p>
+              <p>${esc(dateLabel)}</p>
             </div>` : "";
 
           card.innerHTML = carouselHtml + textHtml + labelHtml;
 
-          // Click opens modal
-          card.addEventListener("click", () => openModal(post));
+          // Click opens modal only when the post has modal content.
+          if (hasModalContent) {
+            card.addEventListener("click", () => openModal(post));
+          }
 
           container.appendChild(card);
 
           // Auto-rotate carousel
-          if (hasImages && images.length > 1) {
+          if (hasMedia) {
             const carousel = card.querySelector(".card-carousel");
-            const imgs     = carousel.querySelectorAll("img");
-            setInterval(() => {
-              const current = carousel.dataset.index | 0;
-              imgs[current].classList.remove("active");
-              const next = (current + 1) % imgs.length;
-              imgs[next].classList.add("active");
-              carousel.dataset.index = next;
-            }, 2800);
+            const items = carousel.querySelectorAll("img, video");
+            syncCardVideos(items);
+
+            if (items.length > 1) {
+              setInterval(() => {
+                const current = carousel.dataset.index | 0;
+                items[current].classList.remove("active");
+                const next = (current + 1) % items.length;
+                items[next].classList.add("active");
+                carousel.dataset.index = next;
+                syncCardVideos(items);
+              }, 2800);
+            }
           }
         });
 
@@ -661,6 +696,100 @@
         .replace(/\*(.+?)\*/g,       "<em>$1</em>")
         .replace(/~~(.+?)~~/g,       "<s>$1</s>")
         .replace(/`([^`]+)`/g,       "<code>$1</code>");
+    }
+
+    function getImages(post) {
+      return getMediaCandidates(post)
+        .filter(item => item.kind === "image");
+    }
+
+    function getVideos(post) {
+      return getMediaCandidates(post)
+        .filter(item => item.kind === "video");
+    }
+
+    function getMediaCandidates(post) {
+      const attachments = Array.isArray(post.attachments) ? post.attachments : [];
+      const embeds = Array.isArray(post.embeds) ? post.embeds : [];
+      const media = [];
+
+      attachments.forEach(item => {
+        const url = item.url || item.proxy_url;
+        const name = item.name || item.filename || url || "";
+        const type = item.type || item.content_type || "";
+        if (isImageMedia(type, name, url)) media.push(normalizeMedia(item, "image", url, name, type));
+        if (isVideoMedia(type, name, url)) media.push(normalizeMedia(item, "video", url, name, type));
+      });
+
+      embeds.forEach(embed => {
+        [
+          embed.image,
+          embed.thumbnail,
+          embed.video,
+          embed.provider,
+          embed
+        ].forEach(item => {
+          if (!item) return;
+          const url = item.url || item.proxy_url;
+          const type = item.type || "";
+          const name = item.name || embed.title || url || "";
+          if (isImageMedia(type, name, url)) media.push(normalizeMedia(item, "image", url, name, type));
+          if (isVideoMedia(type, name, url)) media.push(normalizeMedia(item, "video", url, name, type));
+        });
+      });
+
+      const seen = new Set();
+      return media.filter(item => {
+        if (!item.url || seen.has(item.url)) return false;
+        seen.add(item.url);
+        return true;
+      });
+    }
+
+    function normalizeMedia(item, kind, url, name, type) {
+      return {
+        kind,
+        url,
+        name,
+        type,
+        width: item.width,
+        height: item.height
+      };
+    }
+
+    function isImageMedia(type, name, url) {
+      return String(type).startsWith("image/")
+        || /\.(png|jpe?g|gif|webp|avif)$/i.test(String(name))
+        || /\.(png|jpe?g|gif|webp|avif)(\?|#|$)/i.test(String(url));
+    }
+
+    function isVideoMedia(type, name, url) {
+      return String(type).startsWith("video/")
+        || /\.(mp4|mov|webm|m4v)$/i.test(String(name))
+        || /\.(mp4|mov|webm|m4v)(\?|#|$)/i.test(String(url));
+    }
+
+    function getLogDateLabel(date) {
+      const value = String(date || "").trim();
+      const parsed = new Date(
+        /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00Z` : value
+      );
+      if (Number.isNaN(parsed.getTime())) return "LOG --/--";
+      const day = String(parsed.getUTCDate()).padStart(2, "0");
+      const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+      return `LOG ${day}/${month}`;
+    }
+
+    function syncCardVideos(items) {
+      items.forEach(item => {
+        if (item.tagName !== "VIDEO") return;
+        if (item.classList.contains("active")) {
+          item.play().catch(() => {});
+        } else {
+          item.pause();
+          item.currentTime = 0;
+        }
+      });
     }
 
     function esc(str) {
