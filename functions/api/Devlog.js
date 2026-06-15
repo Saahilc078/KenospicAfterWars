@@ -4,13 +4,10 @@ export async function onRequest(context) {
     const channel = context.env.DISCORD_CHANNEL;
 
     if (!token || !channel) {
-      return jsonResponse(
-        { error: "Missing DISCORD_TOKEN or DISCORD_CHANNEL" },
-        500
-      );
+      return new Response("Missing env variables", { status: 500 });
     }
 
-    const discordRes = await fetch(
+    const res = await fetch(
       `https://discord.com/api/v10/channels/${channel}/messages?limit=20`,
       {
         headers: {
@@ -19,57 +16,49 @@ export async function onRequest(context) {
       }
     );
 
-    const rawText = await discordRes.text();
+    const text = await res.text();
 
     let messages;
     try {
-      messages = JSON.parse(rawText);
+      messages = JSON.parse(text);
     } catch {
-      return jsonResponse({
-        error: "Discord returned invalid JSON",
-        raw: rawText
-      }, 500);
+      return new Response("Discord returned invalid response:\n" + text, {
+        status: 500
+      });
     }
 
     if (!Array.isArray(messages)) {
-      return jsonResponse({
-        error: "Discord response was not an array",
-        raw: messages
-      }, 500);
+      return new Response("Invalid Discord data format", { status: 500 });
     }
 
-    const posts = messages
+    // 🔥 convert to RAW TEXT format
+    const output = messages
       .reverse()
-      .map(msg => ({
-        id: msg.id,
-        title: (msg.content?.split("\n")[0]) || "Devlog",
-        content: msg.content || "",
-        author: msg.author?.username || "unknown",
-        avatar: msg.author?.avatar
-          ? `https://cdn.discordapp.com/avatars/${msg.author.id}/${msg.author.avatar}.png`
-          : `https://cdn.discordapp.com/embed/avatars/0.png`,
-        date: msg.timestamp || null,
-        images: (msg.attachments || []).map(a => a.url)
-      }));
+      .map(msg => {
+        const title = (msg.content?.split("\n")[0] || "Devlog").trim();
+        const body = msg.content || "";
 
-    return jsonResponse(posts, 200);
+        return [
+          "===POST===",
+          "TITLE:" + title,
+          "AUTHOR:" + (msg.author?.username || "unknown"),
+          "DATE:" + (msg.timestamp || ""),
+          "CONTENT:",
+          body,
+          "===END==="
+        ].join("\n");
+      })
+      .join("\n\n");
+
+    return new Response(output, {
+      headers: {
+        "Content-Type": "text/plain"
+      }
+    });
 
   } catch (err) {
-    return jsonResponse({
-      error: "Function crashed",
-      details: err.message
-    }, 500);
+    return new Response("Server error: " + err.message, {
+      status: 500
+    });
   }
-}
-
-/**
- * Safe JSON response helper
- */
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json"
-    }
-  });
 }

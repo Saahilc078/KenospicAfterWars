@@ -2,75 +2,41 @@ async function loadDevlogs() {
   const container = document.getElementById("container");
   const loading = document.getElementById("loading");
 
-  const API_URL = window.location.origin + "/api/devlogs";
-
   try {
-    console.log("Fetching:", API_URL);
-
-    const res = await fetch(API_URL, {
-      method: "GET",
+    const res = await fetch("/api/devlogs", {
       cache: "no-store"
     });
 
     const text = await res.text();
-    console.log("RAW RESPONSE:", text);
+    console.log("RAW RESPONSE:\n", text);
 
     loading?.remove();
 
-    // ❌ Hard fail if not OK
     if (!res.ok) {
-      container.innerHTML = `
-        <div class="error">
-          <h3>API Error (${res.status})</h3>
-          <pre>${escapeHtml(text)}</pre>
-        </div>
-      `;
+      container.innerHTML = `<pre class="error">${escapeHtml(text)}</pre>`;
       return;
     }
 
-    // ❌ Validate JSON before parsing
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (err) {
-      container.innerHTML = `
-        <div class="error">
-          <h3>Invalid JSON from API</h3>
-          <pre>${escapeHtml(text)}</pre>
-        </div>
-      `;
-      return;
-    }
-
-    if (!Array.isArray(data)) {
-      container.innerHTML = `
-        <div class="error">
-          API did not return an array
-        </div>
-      `;
-      return;
-    }
+    const posts = parsePosts(text);
 
     container.innerHTML = "";
 
-    data.forEach(post => {
+    posts.forEach(post => {
       const card = document.createElement("div");
       card.className = "card";
 
       card.innerHTML = `
         <div class="card-header">
-          <img class="avatar" src="${post.avatar || ""}" />
           <div>
-            <div class="title">${escapeHtml(post.title || "Devlog")}</div>
+            <div class="title">${escapeHtml(post.title)}</div>
             <div class="meta">
-              ${escapeHtml(post.author || "unknown")} • 
-              ${post.date ? new Date(post.date).toLocaleString() : "unknown"}
+              ${escapeHtml(post.author)} • ${post.date || "unknown"}
             </div>
           </div>
         </div>
 
         <div class="content">
-          ${formatContent(post.content || "")}
+          ${formatContent(post.content)}
         </div>
       `;
 
@@ -79,64 +45,61 @@ async function loadDevlogs() {
 
   } catch (err) {
     console.error(err);
-
-    loading?.remove();
-    container.innerHTML = `
-      <div class="error">
-        <h3>Fetch Failed</h3>
-        <pre>${err.message}</pre>
-      </div>
-    `;
+    container.innerHTML = `<div class="error">${err.message}</div>`;
   }
 }
 
 /**
- * Converts Discord-style devlogs into readable sections
+ * Parse raw backend format
+ */
+function parsePosts(text) {
+  const blocks = text.split("===POST===").filter(Boolean);
+
+  return blocks.map(block => {
+    const lines = block.split("\n");
+
+    let title = "";
+    let author = "";
+    let date = "";
+    let contentIndex = lines.indexOf("CONTENT:");
+
+    for (const line of lines) {
+      if (line.startsWith("TITLE:")) title = line.replace("TITLE:", "").trim();
+      if (line.startsWith("AUTHOR:")) author = line.replace("AUTHOR:", "").trim();
+      if (line.startsWith("DATE:")) date = line.replace("DATE:", "").trim();
+    }
+
+    const content = lines.slice(contentIndex + 1).join("\n").replace("===END===", "").trim();
+
+    return { title, author, date, content };
+  });
+}
+
+/**
+ * Format Discord-style devlogs
  */
 function formatContent(text) {
   if (!text) return "<i>No content</i>";
 
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  return text
+    .split("\n")
+    .map(line => {
+      line = line.trim();
+      if (!line) return "";
 
-  let html = "";
-  let inList = false;
-
-  for (const line of lines) {
-    const isHeader = /^[A-Z][A-Za-z0-9 ]+$/.test(line) && line.length < 40;
-
-    if (isHeader) {
-      if (inList) {
-        html += "</ul>";
-        inList = false;
+      if (/^[A-Z][A-Za-z0-9 ]+$/.test(line) && line.length < 40) {
+        return `<h3>${escapeHtml(line)}</h3>`;
       }
 
-      html += `<h3>${escapeHtml(line)}</h3>`;
-      continue;
-    }
-
-    if (line.startsWith("-")) {
-      if (!inList) {
-        html += "<ul>";
-        inList = true;
+      if (line.startsWith("-")) {
+        return `<li>${escapeHtml(line.slice(1).trim())}</li>`;
       }
-      html += `<li>${escapeHtml(line.slice(1).trim())}</li>`;
-    } else {
-      if (inList) {
-        html += "</ul>";
-        inList = false;
-      }
-      html += `<p>${escapeHtml(line)}</p>`;
-    }
-  }
 
-  if (inList) html += "</ul>";
-
-  return html;
+      return `<p>${escapeHtml(line)}</p>`;
+    })
+    .join("");
 }
 
-/**
- * Prevent HTML breaking / injection
- */
 function escapeHtml(str) {
   return String(str)
     .replaceAll("&", "&amp;")
