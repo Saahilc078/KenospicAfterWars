@@ -85,15 +85,15 @@
     /* ── Body ── */
     .card-body {
       padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
     }
 
     .content {
       line-height: 1.7;
       color: #c9d1d9;
-      margin-bottom: 16px;
     }
-
-    .content:empty { display: none; }
 
     .content p { margin-bottom: 8px; }
     .content p:last-child { margin-bottom: 0; }
@@ -102,7 +102,6 @@
       margin: 6px 0 10px 20px;
       list-style: disc;
     }
-
     .content li { margin-bottom: 4px; }
 
     .content h3 {
@@ -119,8 +118,8 @@
     /* ── Media grid ── */
     .media-grid {
       display: grid;
-      gap: 8px;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 6px;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     }
 
     .media-grid.single {
@@ -131,7 +130,6 @@
       border-radius: 8px;
       overflow: hidden;
       background: #0d1117;
-      max-height: 480px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -139,19 +137,24 @@
 
     .media-item img {
       width: 100%;
-      height: 100%;
+      height: 220px;
       object-fit: cover;
       display: block;
-      cursor: pointer;
+      cursor: zoom-in;
       transition: opacity 0.2s;
     }
     .media-item img:hover { opacity: 0.85; }
+
+    .media-grid.single .media-item img {
+      height: auto;
+      max-height: 520px;
+      object-fit: contain;
+    }
 
     .media-item video {
       width: 100%;
       max-height: 480px;
       display: block;
-      border-radius: 8px;
     }
 
     /* ── Lightbox ── */
@@ -159,7 +162,7 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.92);
+      background: rgba(0,0,0,0.93);
       z-index: 1000;
       align-items: center;
       justify-content: center;
@@ -173,18 +176,17 @@
       max-height: 90vh;
       object-fit: contain;
       border-radius: 6px;
-      box-shadow: 0 0 60px rgba(0,0,0,0.8);
     }
 
     #lightbox-close {
       position: fixed;
       top: 16px;
-      right: 20px;
-      font-size: 28px;
+      right: 22px;
+      font-size: 30px;
       color: #fff;
       cursor: pointer;
+      opacity: 0.7;
       line-height: 1;
-      opacity: 0.8;
     }
     #lightbox-close:hover { opacity: 1; }
 
@@ -232,31 +234,22 @@
     <div class="loading" id="loading">Loading devlogs</div>
   </div>
 
-  <!-- Lightbox -->
   <div id="lightbox">
     <span id="lightbox-close">✕</span>
     <img id="lightbox-img" src="" alt=""/>
   </div>
 
   <script>
-    // ── Lightbox ──
+    // Lightbox
     const lightbox = document.getElementById("lightbox");
     const lightboxImg = document.getElementById("lightbox-img");
-
     document.getElementById("lightbox-close").onclick = closeLightbox;
     lightbox.addEventListener("click", e => { if (e.target === lightbox) closeLightbox(); });
     document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
+    function openLightbox(src) { lightboxImg.src = src; lightbox.classList.add("open"); }
+    function closeLightbox() { lightbox.classList.remove("open"); lightboxImg.src = ""; }
 
-    function openLightbox(src) {
-      lightboxImg.src = src;
-      lightbox.classList.add("open");
-    }
-    function closeLightbox() {
-      lightbox.classList.remove("open");
-      lightboxImg.src = "";
-    }
-
-    // ── Main ──
+    // Main
     async function loadDevlogs() {
       const container = document.getElementById("container");
       const loading = document.getElementById("loading");
@@ -264,7 +257,6 @@
       try {
         const res = await fetch("/api/devlogs", { cache: "no-store" });
         const text = await res.text();
-
         loading?.remove();
 
         if (!res.ok) {
@@ -273,9 +265,8 @@
         }
 
         let posts;
-        try {
-          posts = JSON.parse(text);
-        } catch {
+        try { posts = JSON.parse(text); }
+        catch {
           container.innerHTML = `<pre class="error">Failed to parse response:\n${escapeHtml(text)}</pre>`;
           return;
         }
@@ -292,16 +283,15 @@
           card.className = "card";
 
           const avatarHtml = post.avatar
-            ? `<img class="avatar" src="${escapeHtml(post.avatar)}" alt="${escapeHtml(post.author)}" onerror="this.outerHTML='<div class=\\'avatar-placeholder\\'>📋</div>'">`
+            ? `<img class="avatar" src="${escapeHtml(post.avatar)}" alt="${escapeHtml(post.author)}"
+                onerror="this.outerHTML='<div class=\\'avatar-placeholder\\'>📋</div>'">`
             : `<div class="avatar-placeholder">📋</div>`;
 
-          const dateStr = post.date
-            ? new Date(post.date).toLocaleDateString("en-AU", {
-                year: "numeric", month: "long", day: "numeric"
-              })
-            : "Unknown date";
+          const dateStr = new Date(post.date + "T12:00:00Z").toLocaleDateString("en-AU", {
+            year: "numeric", month: "long", day: "numeric"
+          });
 
-          // Media
+          // Split attachments into images and videos
           const images = post.attachments.filter(a =>
             a.type.startsWith("image/") || /\.(png|jpg|jpeg|gif|webp)$/i.test(a.name)
           );
@@ -313,12 +303,13 @@
           let mediaHtml = "";
 
           if (totalMedia > 0) {
-            const gridClass = totalMedia === 1 ? "media-grid single" : "media-grid";
+            const gridClass = "media-grid" + (totalMedia === 1 ? " single" : "");
             const items = [
               ...images.map(img => `
                 <div class="media-item">
-                  <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.name)}"
-                       onclick="openLightbox('${escapeHtml(img.url)}')">
+                  <img src="${escapeHtml(img.url)}"
+                       alt="${escapeHtml(img.name)}"
+                       onclick="openLightbox('${escapeHtml(img.url).replace(/'/g, "\\'")}')">
                 </div>`),
               ...videos.map(vid => `
                 <div class="media-item">
@@ -330,6 +321,8 @@
             mediaHtml = `<div class="${gridClass}">${items}</div>`;
           }
 
+          const contentHtml = formatContent(post.content);
+
           card.innerHTML = `
             <div class="card-header">
               ${avatarHtml}
@@ -339,7 +332,7 @@
               </div>
             </div>
             <div class="card-body">
-              <div class="content">${formatContent(post.content)}</div>
+              ${contentHtml ? `<div class="content">${contentHtml}</div>` : ""}
               ${mediaHtml}
             </div>
           `;
@@ -356,33 +349,26 @@
 
     function formatContent(text) {
       if (!text) return "";
-
       const lines = text.split("\n");
       let html = "";
       let inList = false;
 
       for (const raw of lines) {
         const line = raw.trim();
-
         if (!line) {
           if (inList) { html += "</ul>"; inList = false; }
           continue;
         }
-
         if (line.startsWith("- ") || line.startsWith("• ")) {
           if (!inList) { html += "<ul>"; inList = true; }
           html += `<li>${escapeHtml(line.slice(2).trim())}</li>`;
           continue;
         }
-
         if (inList) { html += "</ul>"; inList = false; }
-
-        // ALL CAPS short line = section heading
         if (line === line.toUpperCase() && line.length < 50 && /[A-Z]/.test(line)) {
           html += `<h3>${escapeHtml(line)}</h3>`;
           continue;
         }
-
         html += `<p>${escapeHtml(line)}</p>`;
       }
 
