@@ -31,7 +31,7 @@ export async function onRequest(context) {
       return new Response("Invalid Discord data format", { status: 500 });
     }
 
-    // 🔥 convert to RAW TEXT format
+  
     const output = messages
       .reverse()
       .map(msg => {
