@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Devlogs – KenospicAfterWars</title>
+
   <style>
     @import url("https://fonts.googleapis.com/css?family=Roboto:100,300,100italic,300italic");
 
@@ -27,7 +28,6 @@
       border-bottom: 1px solid rgba(255,255,255,0.08);
     }
 
-    /* ── Grid of cards ── */
     #container {
       max-width: 1100px;
       margin: 0 auto;
@@ -37,7 +37,6 @@
       gap: 24px;
     }
 
-    /* ── Glass card (copied from .glass-button) ── */
     .log-card {
       position: relative;
       width: 100%;
@@ -45,634 +44,221 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      align-items: stretch;
-      cursor: pointer;
       border-radius: 10px;
       background: rgba(255,255,255,0.08);
       backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255,255,255,0.15);
       overflow: hidden;
-      text-decoration: none;
-      transition:
-        background 0.35s ease,
-        transform 0.35s ease,
-        box-shadow 0.35s ease;
+      cursor: pointer;
     }
 
-    /* Shimmer sweep — idle */
-    .log-card::before {
-      content: "";
-      position: absolute;
-      top: -100%;
-      left: -100%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.08), transparent);
-      transform: rotate(25deg);
-      transition: 0.8s;
-      z-index: 1;
-      pointer-events: none;
-    }
-
-    .log-card:hover::before {
-      top: 100%;
-      left: 100%;
-    }
-
-    .log-card:hover {
-      background: rgba(255,255,255,0.95);
-      transform: translateY(-6px);
-      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-    }
-
-    /* Carousel fills the whole card */
     .card-carousel {
       position: absolute;
       inset: 0;
       z-index: 0;
     }
 
-    .card-carousel img {
+    .card-carousel img,
+    .card-carousel video {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
       opacity: 0;
-      transition: opacity 0.6s ease;
+      transition: opacity 0.5s ease;
     }
 
-    .card-carousel img.active {
+    .card-carousel img.active,
+    .card-carousel video.active {
       opacity: 1;
     }
 
-    /* Dark gradient over image so text is readable */
     .card-carousel::after {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%);
-      pointer-events: none;
+      background: linear-gradient(to top, rgba(0,0,0,0.75), transparent 60%);
     }
 
-    /* No-image card: text centered */
     .card-text-only {
       position: absolute;
       inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 2;
       padding: 16px;
       text-align: center;
+      z-index: 2;
     }
 
     .card-text-only p {
       font-size: 13px;
-      font-weight: 300;
       color: rgba(255,255,255,0.85);
-      line-height: 1.6;
-      /* clamp to ~4 lines */
+      line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 5;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      transition: color 0.35s ease;
     }
 
-    .log-card:hover .card-text-only p {
-      color: #111;
-    }
-
-    /* Bottom label bar */
     .card-label {
       position: relative;
       z-index: 3;
       padding: 0 14px 12px;
     }
 
-    /* White line */
     .card-line {
-      width: 100%;
       height: 1px;
       background: rgba(255,255,255,0.6);
-      margin-bottom: 8px;
-      transition: background 0.35s ease;
-    }
-
-    .log-card:hover .card-line {
-      background: rgba(0,0,0,0.25);
+      margin-bottom: 6px;
     }
 
     .card-date {
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 3px;
-      color: rgba(255,255,255,0.9);
       text-transform: uppercase;
-      transition: color 0.35s ease;
     }
 
-    .log-card:hover .card-date {
-      color: #111;
-    }
-
-    /* Hide date label when card has no images (text-only shows text instead) */
-    .log-card.no-image .card-label {
-      display: none;
-    }
-
-    /* ── Modal overlay ── */
-    #modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      overflow-y: auto;
-      padding: 40px 20px;
-    }
-
-    #modal-overlay.open {
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-    }
-
-    .modal-box {
-      position: relative;
-      width: 100%;
-      max-width: 820px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.18);
-      border-radius: 14px;
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      padding: 36px 40px;
-      color: #fff;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
-    }
-
-    .modal-close {
-      position: absolute;
-      top: 16px;
-      right: 20px;
-      font-size: 26px;
-      color: rgba(255,255,255,0.6);
-      cursor: pointer;
-      line-height: 1;
-      transition: color 0.2s;
-      background: none;
-      border: none;
-    }
-    .modal-close:hover { color: #fff; }
-
-    /* Modal header */
-    .modal-header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 24px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-    }
-
-    .modal-avatar {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      object-fit: cover;
-      background: rgba(255,255,255,0.1);
-      flex-shrink: 0;
-    }
-
-    .modal-avatar-placeholder {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-
-    .modal-title {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      color: #fff;
-    }
-
-    .modal-meta {
-      font-size: 12px;
-      color: rgba(255,255,255,0.5);
-      margin-top: 3px;
-      letter-spacing: 1px;
-    }
-
-    /* Modal content (markdown) */
-    .modal-content {
-      line-height: 1.75;
-      color: rgba(255,255,255,0.88);
-      margin-bottom: 28px;
-    }
-
-    .modal-content:empty { display: none; }
-
-    .modal-content h2 {
-      font-size: 17px;
-      font-weight: 700;
-      color: #fff;
-      border-bottom: 1px solid rgba(255,255,255,0.15);
-      padding-bottom: 6px;
-      margin: 20px 0 10px;
-      letter-spacing: 1px;
-    }
-
-    .modal-content h3 {
-      font-size: 13px;
-      font-weight: 700;
-      color: rgba(180,210,255,0.9);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding-bottom: 4px;
-      margin: 14px 0 8px;
-    }
-
-    .modal-content h4 {
-      font-size: 13px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.6);
-      margin: 10px 0 6px;
-    }
-
-    .modal-content p { margin-bottom: 8px; }
-    .modal-content p:last-child { margin-bottom: 0; }
-
-    .modal-content ul {
-      margin: 6px 0 10px 20px;
-      list-style: disc;
-    }
-
-    .modal-content li { margin-bottom: 5px; }
-
-    .modal-content code {
-      background: rgba(0,0,0,0.35);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 4px;
-      padding: 1px 6px;
-      font-family: monospace;
-      font-size: 12px;
-      color: #e6edf3;
-    }
-
-    .modal-content s { color: rgba(255,255,255,0.4); }
-    .modal-content strong { color: #fff; }
-
-    /* Modal media grid */
-    .modal-media {
-      display: grid;
-      gap: 8px;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    }
-
-    .modal-media.single { grid-template-columns: 1fr; }
-
-    .modal-media-item {
-      border-radius: 8px;
-      overflow: hidden;
-      background: rgba(0,0,0,0.3);
-    }
-
-    .modal-media-item img {
-      width: 100%;
-      display: block;
-      cursor: zoom-in;
-      transition: opacity 0.2s;
-      border-radius: 8px;
-    }
-    .modal-media-item img:hover { opacity: 0.85; }
-
-    .modal-media.single .modal-media-item img {
-      max-height: 520px;
-      object-fit: contain;
-    }
-
-    .modal-media-item video {
-      width: 100%;
-      display: block;
-      border-radius: 8px;
-    }
-
-    /* ── Lightbox ── */
-    #lightbox {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.93);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      cursor: zoom-out;
-    }
-    #lightbox.open { display: flex; }
-    #lightbox img {
-      max-width: 100%;
-      max-height: 90vh;
-      object-fit: contain;
-      border-radius: 6px;
-    }
-    #lightbox-close {
-      position: fixed;
-      top: 16px;
-      right: 22px;
-      font-size: 30px;
-      color: #fff;
-      cursor: pointer;
-      opacity: 0.7;
-    }
-    #lightbox-close:hover { opacity: 1; }
-
-    /* ── States ── */
     .loading {
       grid-column: 1 / -1;
       text-align: center;
       padding: 60px;
       color: rgba(255,255,255,0.4);
-      letter-spacing: 3px;
-      font-size: 13px;
-      text-transform: uppercase;
-    }
-    .loading::after {
-      content: '';
-      display: block;
-      width: 28px;
-      height: 28px;
-      border: 2px solid rgba(255,255,255,0.1);
-      border-top-color: rgba(255,255,255,0.6);
-      border-radius: 50%;
-      margin: 16px auto 0;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .error {
-      grid-column: 1 / -1;
-      background: rgba(255,50,50,0.1);
-      border: 1px solid rgba(255,80,80,0.3);
-      padding: 16px;
-      border-radius: 8px;
-      color: #ffb3b3;
-      white-space: pre-wrap;
-      font-size: 13px;
     }
 
-    @media (max-width: 600px) {
-      #container { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 
 <body>
-  <header>Devlogs</header>
 
-  <div id="container">
-    <div class="loading" id="loading">Loading</div>
-  </div>
+<header>Devlogs</header>
 
-  <!-- Modal -->
-  <div id="modal-overlay">
-    <div class="modal-box" id="modal-box">
-      <button class="modal-close" id="modal-close">✕</button>
-      <div id="modal-inner"></div>
-    </div>
-  </div>
+<div id="container">
+  <div class="loading" id="loading">Loading...</div>
+</div>
 
-  <!-- Lightbox -->
-  <div id="lightbox">
-    <span id="lightbox-close">✕</span>
-    <img id="lightbox-img" src="" alt=""/>
-  </div>
+<script>
+const container = document.getElementById("container");
 
-  <script>
-    // ── Lightbox ──
-    const lightbox    = document.getElementById("lightbox");
-    const lightboxImg = document.getElementById("lightbox-img");
-    document.getElementById("lightbox-close").onclick = closeLightbox;
-    lightbox.addEventListener("click", e => { if (e.target === lightbox) closeLightbox(); });
-    document.addEventListener("keydown", e => { if (e.key === "Escape") { closeLightbox(); closeModal(); } });
-    function openLightbox(src) { lightboxImg.src = src; lightbox.classList.add("open"); }
-    function closeLightbox() { lightbox.classList.remove("open"); lightboxImg.src = ""; }
+function esc(str) {
+  return String(str ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
 
-    // ── Modal ──
-    const modalOverlay = document.getElementById("modal-overlay");
-    document.getElementById("modal-close").onclick = closeModal;
-    modalOverlay.addEventListener("click", e => { if (e.target === modalOverlay) closeModal(); });
-    function closeModal() { modalOverlay.classList.remove("open"); }
+function formatDateLabel(dateStr) {
+  const d = new Date(dateStr + "T12:00:00Z");
+  return `LOG ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+}
 
-    function openModal(post) {
-      const dateStr = new Date(post.date + "T12:00:00Z").toLocaleDateString("en-AU", {
-        year: "numeric", month: "long", day: "numeric"
-      });
+async function loadDevlogs() {
+  try {
+    const res = await fetch("/api/devlogs", { cache: "no-store" });
+    const data = await res.text();
 
-      const avatarHtml = post.avatar
-        ? `<img class="modal-avatar" src="${esc(post.avatar)}" alt="${esc(post.author)}"
-             onerror="this.outerHTML='<div class=\\'modal-avatar-placeholder\\'>📋</div>'">`
-        : `<div class="modal-avatar-placeholder">📋</div>`;
+    document.getElementById("loading")?.remove();
+
+    let posts = JSON.parse(data);
+
+    container.innerHTML = "";
+
+    posts.forEach(post => {
 
       const images = post.attachments.filter(a =>
-        a.type.startsWith("image/") || /\.(png|jpg|jpeg|gif|webp)$/i.test(a.name));
-      const videos = post.attachments.filter(a =>
-        a.type.startsWith("video/") || /\.(mp4|mov|webm)$/i.test(a.name));
+        (a.type?.startsWith("image/")) ||
+        /\.(png|jpg|jpeg|gif|webp)$/i.test(a.name || "")
+      );
 
-      const totalMedia = images.length + videos.length;
-      let mediaHtml = "";
-      if (totalMedia > 0) {
-        const cls = "modal-media" + (totalMedia === 1 ? " single" : "");
-        const items = [
-          ...images.map(img => `
-            <div class="modal-media-item">
-              <img src="${esc(img.url)}" alt="${esc(img.name)}"
-                   onclick="openLightbox('${esc(img.url)}')">
-            </div>`),
-          ...videos.map(vid => `
-            <div class="modal-media-item">
-              <video controls preload="metadata">
-                <source src="${esc(vid.url)}" type="${esc(vid.type || 'video/mp4')}">
-              </video>
-            </div>`)
-        ].join("");
-        mediaHtml = `<div class="${cls}">${items}</div>`;
+      const videos = post.attachments.filter(a =>
+        (a.type?.startsWith("video/")) ||
+        /\.(mp4|mov|webm)$/i.test(a.name || "")
+      );
+
+      const media = [...images, ...videos];
+      const hasMedia = media.length > 0;
+
+      const card = document.createElement("div");
+      card.className = "log-card";
+
+      let carousel = "";
+
+      if (hasMedia) {
+        carousel = `
+          <div class="card-carousel" data-index="0">
+            ${media.map((m, i) => {
+              const isVideo =
+                (m.type?.startsWith("video/")) ||
+                /\.(mp4|mov|webm)$/i.test(m.name || "");
+
+              return isVideo
+                ? `<video class="${i===0?'active':''}" muted playsinline>
+                     <source src="${esc(m.url)}">
+                   </video>`
+                : `<img src="${esc(m.url)}"
+                        class="${i===0?'active':''}">`;
+            }).join("")}
+          </div>
+        `;
       }
 
-      document.getElementById("modal-inner").innerHTML = `
-        <div class="modal-header">
-          ${avatarHtml}
-          <div>
-            <div class="modal-title">${esc(post.title)}</div>
-            <div class="modal-meta">${esc(post.author)} · ${dateStr}</div>
-          </div>
+      const text = !hasMedia ? `
+        <div class="card-text-only">
+          <p>${esc(post.content || post.title)}</p>
+        </div>` : "";
+
+      const label = `
+        <div class="card-label">
+          <div class="card-line"></div>
+          <div class="card-date">${formatDateLabel(post.date)}</div>
         </div>
-        ${post.content ? `<div class="modal-content">${formatContent(post.content)}</div>` : ""}
-        ${mediaHtml}
       `;
 
-      modalOverlay.classList.add("open");
-      modalOverlay.scrollTop = 0;
-    }
+      card.innerHTML = carousel + text + label;
 
-    // ── Main load ──
-    async function loadDevlogs() {
-      const container = document.getElementById("container");
-      const loading   = document.getElementById("loading");
+      card.addEventListener("click", () => {
+        console.log("open modal:", post.title);
+      });
 
-      try {
-        const res  = await fetch("/api/devlogs", { cache: "no-store" });
-        const text = await res.text();
-        loading?.remove();
+      container.appendChild(card);
 
-        if (!res.ok) {
-          container.innerHTML = `<pre class="error">${esc(text)}</pre>`;
-          return;
-        }
+      if (hasMedia && media.length > 1) {
+        const carouselEl = card.querySelector(".card-carousel");
+        const items = carouselEl.querySelectorAll("img, video");
 
-        let posts;
-        try { posts = JSON.parse(text); }
-        catch {
-          container.innerHTML = `<pre class="error">Failed to parse response:\n${esc(text)}</pre>`;
-          return;
-        }
+        setInterval(() => {
+          let current = Number(carouselEl.dataset.index || 0);
 
-        if (!posts.length) {
-          container.innerHTML = `<div class="loading">No devlogs found.</div>`;
-          return;
-        }
+          items[current].classList.remove("active");
+          if (items[current].tagName === "VIDEO") items[current].pause();
 
-        container.innerHTML = "";
+          const next = (current + 1) % items.length;
 
-        posts.forEach(post => {
-          const images = post.attachments.filter(a =>
-            a.type.startsWith("image/") || /\.(png|jpg|jpeg|gif|webp)$/i.test(a.name));
-
-          const hasImages = images.length > 0;
-
-          const card = document.createElement("div");
-          card.className = "log-card" + (hasImages ? "" : " no-image");
-
-          // Carousel (images only — videos stay in modal)
-          let carouselHtml = "";
-          if (hasImages) {
-            const imgs = images.map((img, i) =>
-              `<img src="${esc(img.url)}" alt="${esc(img.name)}" class="${i === 0 ? 'active' : ''}" loading="lazy">`
-            ).join("");
-            carouselHtml = `<div class="card-carousel" data-index="0">${imgs}</div>`;
+          items[next].classList.add("active");
+          if (items[next].tagName === "VIDEO") {
+            items[next].currentTime = 0;
+            items[next].play().catch(()=>{});
           }
 
-          // Bottom label (only shown when there are images)
-          const labelHtml = hasImages ? `
-            <div class="card-label">
-              <div class="card-line"></div>
-              <div class="card-date">${esc(post.title)}</div>
-            </div>` : "";
-
-          // Text preview (only shown when no images)
-          const textHtml = !hasImages ? `
-            <div class="card-text-only">
-              <p>${esc(post.content || post.title)}</p>
-            </div>` : "";
-
-          card.innerHTML = carouselHtml + textHtml + labelHtml;
-
-          // Click opens modal
-          card.addEventListener("click", () => openModal(post));
-
-          container.appendChild(card);
-
-          // Auto-rotate carousel
-          if (hasImages && images.length > 1) {
-            const carousel = card.querySelector(".card-carousel");
-            const imgs     = carousel.querySelectorAll("img");
-            setInterval(() => {
-              const current = carousel.dataset.index | 0;
-              imgs[current].classList.remove("active");
-              const next = (current + 1) % imgs.length;
-              imgs[next].classList.add("active");
-              carousel.dataset.index = next;
-            }, 2800);
-          }
-        });
-
-      } catch (err) {
-        console.error(err);
-        if (loading) loading.remove();
-        container.innerHTML = `<div class="error">Failed to load: ${esc(err.message)}</div>`;
+          carouselEl.dataset.index = next;
+        }, 3000);
       }
-    }
+    });
 
-    // ── Discord markdown → HTML ──
-    function formatContent(text) {
-      if (!text) return "";
-      const lines = text.split("\n");
-      let html = "";
-      let inList = false;
+  } catch (err) {
+    container.innerHTML = `<pre style="color:red;">${esc(err.message)}</pre>`;
+  }
+}
 
-      for (const raw of lines) {
-        const line = raw.trim();
+loadDevlogs();
+</script>
 
-        if (!line) {
-          if (inList) { html += "</ul>"; inList = false; }
-          continue;
-        }
-
-        const hMatch = line.match(/^(#{1,3})\s+(.+)$/);
-        if (hMatch) {
-          if (inList) { html += "</ul>"; inList = false; }
-          const tag = ["h2","h3","h4"][hMatch[1].length - 1];
-          html += `<${tag}>${inlineMd(hMatch[2])}</${tag}>`;
-          continue;
-        }
-
-        const bMatch = line.match(/^[*\-•]\s+(.+)$/);
-        if (bMatch) {
-          if (!inList) { html += "<ul>"; inList = true; }
-          html += `<li>${inlineMd(bMatch[1])}</li>`;
-          continue;
-        }
-
-        if (inList) { html += "</ul>"; inList = false; }
-        html += `<p>${inlineMd(line)}</p>`;
-      }
-
-      if (inList) html += "</ul>";
-      return html;
-    }
-
-    function inlineMd(text) {
-      return esc(text)
-        .replace(/\*{3}(.+?)\*{3}/g, "<strong><em>$1</em></strong>")
-        .replace(/\*{2}(.+?)\*{2}/g, "<strong>$1</strong>")
-        .replace(/\*(.+?)\*/g,       "<em>$1</em>")
-        .replace(/~~(.+?)~~/g,       "<s>$1</s>")
-        .replace(/`([^`]+)`/g,       "<code>$1</code>");
-    }
-
-    function esc(str) {
-      return String(str ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    loadDevlogs();
-  </script>
 </body>
 </html>
