@@ -54,6 +54,6 @@ export async function onRequest(context) {
             headers: { "Content-Type": "application/json" }
         });
     }
-}
-console.log("TOKEN EXISTS:", !!context.env.DISCORD_TOKEN);
+    console.log("TOKEN EXISTS:", !!context.env.DISCORD_TOKEN);
 console.log("CHANNEL:", context.env.DISCORD_CHANNEL);
+}
