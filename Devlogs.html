@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Devlogs</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f1115;
+      color: #e6e6e6;
+    }
+
+    header {
+      padding: 40px;
+      text-align: center;
+      font-size: 32px;
+      font-weight: bold;
+      background: #151922;
+      border-bottom: 1px solid #2a2f3a;
+    }
+
+    #container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #2a2f3a;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .meta {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .content {
+      white-space: pre-wrap;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+
+    .images {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .images img {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid #2a2f3a;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 50px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+
+<body>
+  <header>Devlogs</header>
+
+  <div id="container">
+    <div class="loading" id="loading">Loading devlogs...</div>
+  </div>
+
+  <script>
+    async function loadDevlogs() {
+      const container = document.getElementById("container");
+      const loading = document.getElementById("loading");
+
+      try {
+        const res = await fetch("/api/devlogs");
+        
+        if (!res.ok) {
+          throw new Error("Failed to fetch devlogs");
+        }
+
+        const data = await res.json();
+
+        loading.remove();
+
+        data.forEach(post => {
+          const card = document.createElement("div");
+          card.className = "card";
+
+          const imagesHTML = (post.images && post.images.length)
+            ? `<div class="images">
+                ${post.images.map(img => `<img src="${img}" />`).join("")}
+              </div>`
+            : "";
+
+          card.innerHTML = `
+            <div class="card-header">
+              <img class="avatar" src="${post.avatar}" />
+              <div>
+                <div class="title">${post.title || "Untitled"}</div>
+                <div class="meta">
+                  ${post.author} • ${new Date(post.date).toLocaleString()}
+                </div>
+              </div>
+            </div>
+
+            <div class="content">${post.content}</div>
+
+            ${imagesHTML}
+          `;
+
+          container.appendChild(card);
+        });
+
+      } catch (err) {
+        loading.textContent = "Failed to load devlogs.";
+        console.error(err);
+      }
+    }
+
+    loadDevlogs();
+  </script>
+</body>
+</html>
