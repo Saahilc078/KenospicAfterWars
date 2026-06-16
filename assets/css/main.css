@@ -4005,7 +4005,7 @@ css.game-title-wrap {
 }
 
 .game-title-box h1 {
-    font-family: "Youngerthanme", Helvetica, sans-serif;
+   
     font-size: clamp(1.6rem, 4vw, 4rem);
     font-weight: 100;
     letter-spacing: clamp(5px, 1.2vw, 16px);
@@ -4019,7 +4019,7 @@ css.game-title-wrap {
 .game-title-box .title-sub {
     display: block;
     margin-top: 8px;
-    font-family: "Youngerthanme", Helvetica, sans-serif;
+    
     font-size: clamp(0.5rem, 0.9vw, 0.75rem);
     font-weight: 100;
     letter-spacing: clamp(2px, 0.5vw, 6px);
@@ -5110,14 +5110,5 @@ body {
 						margin: 0;
 						padding: 0;
 					}
-@font-face {
-    font-family: "YoungerThanMe";
-    src: url("../webfonts/Youngerthanme.ttf") format("truetype");
-    font-weight: normal;
-    font-style: normal;
-}
 
-html, body {
-    font-family: "YoungerThanMe", sans-serif !important;
-}
 	}
